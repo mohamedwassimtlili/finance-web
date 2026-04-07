@@ -1,0 +1,70 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Complaint #{{ complaint.id }} — Admin{% endblock %}
+{% block page_title %}Complaint #{{ complaint.id }}{% endblock %}
+
+{% block body %}
+{% for msg in app.flashes('success') %}<div class="alert alert-success alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+<div class="row">
+    <div class="col-lg-7">
+        {# Complaint detail #}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-megaphone me-2"></i>Complaint Details</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-3">
+                    <tr><th style="width:30%">Client</th><td>{{ complaint.user ? complaint.user.name : 'N/A' }}</td></tr>
+                    <tr><th>Email</th><td>{{ complaint.user ? complaint.user.email : '—' }}</td></tr>
+                    <tr><th>Submitted</th><td>{{ complaint.complaintDate|date('d/m/Y') }}</td></tr>
+                    <tr><th>Status</th>
+                        <td>
+                            {% if complaint.status == 'resolved' %}<span class="badge bg-success">Resolved</span>
+                            {% elseif complaint.status == 'in_progress' %}<span class="badge bg-info">In Progress</span>
+                            {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
+                        </td>
+                    </tr>
+                </table>
+                <h6 class="fw-semibold mb-2">Subject / Description</h6>
+                <div class="p-3 bg-light rounded">{{ complaint.subject }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        {# Admin response form #}
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0"><i class="bi bi-chat-left-dots me-2"></i>Admin Response</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ path('admin_complaint_show', {id: complaint.id}) }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="pending" {% if complaint.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="in_progress" {% if complaint.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                            <option value="resolved" {% if complaint.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Response Message</label>
+                        <textarea name="response" class="form-control" rows="6"
+                                  placeholder="Write your response to the client…">{{ complaint.response }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-send me-1"></i>Save Response
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ path('admin_complaint_index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to All Complaints
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}All Budgets (Admin){% endblock %}
+{% block page_title %}All Budgets{% endblock %}
+
+{% block body %}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-wallet2 me-2"></i>Budget Directory</h3>
+        <span class="badge bg-secondary ms-2">{{ budgets|length }} total</span>
+    </div>
+    <div class="card-body p-0">
+        {% if budgets is empty %}
+            <div class="text-center py-5 text-muted"><i class="bi bi-inbox" style="font-size:3rem;"></i><p class="mt-2">No budgets found.</p></div>
+        {% else %}
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>#</th><th>Owner</th><th>Name</th><th>Category</th><th>Amount (TND)</th><th>Spent (TND)</th><th>Period</th><th>Usage</th></tr>
+                </thead>
+                <tbody>
+                {% for b in budgets %}
+                    {% set pct = b.amount > 0 ? (b.spentAmount / b.amount * 100)|round : 0 %}
+                    <tr>
+                        <td>{{ b.id }}</td>
+                        <td>{{ b.user.name }}<br><small class="text-muted">{{ b.user.email }}</small></td>
+                        <td>{{ b.name }}</td>
+                        <td>{{ b.category|default('—') }}</td>
+                        <td>{{ b.amount|number_format(2,'.', ',') }}</td>
+                        <td>{{ b.spentAmount|number_format(2,'.', ',') }}</td>
+                        <td><small>{{ b.startDate|date('d/m/Y') }} → {{ b.endDate|date('d/m/Y') }}</small></td>
+                        <td style="min-width:120px;">
+                            <div class="progress" style="height:10px;">
+                                <div class="progress-bar {% if pct >= 100 %}bg-danger{% elseif pct >= 75 %}bg-warning{% else %}bg-success{% endif %}"
+                                     style="width:{{ pct > 100 ? 100 : pct }}%"></div>
+                            </div>
+                            <small>{{ pct }}%</small>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

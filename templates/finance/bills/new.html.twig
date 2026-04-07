@@ -1,0 +1,58 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Add Bill{% endblock %}
+{% block page_title %}Add Bill to "{{ budget.name }}"{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header"><h3 class="card-title"><i class="bi bi-file-earmark-plus me-2"></i>New Bill</h3></div>
+            <div class="card-body">
+                <form method="post" action="{{ path('finance_bill_new', {id: budget.id}) }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Bill Name</label>
+                        <input type="text" name="name" class="form-control" required placeholder="e.g. Electricity">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Amount (TND)</label>
+                        <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required placeholder="e.g. 80.00">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Due Day of Month</label>
+                            <input type="number" min="1" max="31" name="due_day" class="form-control" required placeholder="e.g. 5">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Frequency</label>
+                            <select name="frequency" class="form-select" required>
+                                <option value="monthly">Monthly</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="annually">Annually</option>
+                                <option value="one-time">One-time</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category <small class="text-muted">(optional)</small></label>
+                        <select name="category" class="form-select">
+                            <option value="">— None —</option>
+                            {% for cat in ['Utilities','Rent','Insurance','Subscription','Internet','Other'] %}
+                                <option>{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Description <small class="text-muted">(optional)</small></label>
+                        <textarea name="description" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Add Bill</button>
+                        <a href="{{ path('finance_budget_show', {id: budget.id}) }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

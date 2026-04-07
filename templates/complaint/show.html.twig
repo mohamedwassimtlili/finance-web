@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Complaint #{{ complaint.id }}{% endblock %}
+{% block page_title %}Complaint #{{ complaint.id }}{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0"><i class="bi bi-megaphone me-2"></i>Your Complaint</h3>
+                {% if complaint.status == 'resolved' %}<span class="badge bg-success fs-6">Resolved</span>
+                {% elseif complaint.status == 'in_progress' %}<span class="badge bg-info fs-6">In Progress</span>
+                {% else %}<span class="badge bg-warning text-dark fs-6">Pending</span>{% endif %}
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-1">Submitted on {{ complaint.complaintDate|date('d/m/Y') }}</p>
+                <div class="p-3 bg-light rounded mt-2">{{ complaint.subject }}</div>
+            </div>
+        </div>
+
+        {% if complaint.response %}
+            <div class="card shadow-sm border-success">
+                <div class="card-header bg-success text-white">
+                    <h3 class="card-title mb-0"><i class="bi bi-chat-left-dots me-2"></i>Admin Response</h3>
+                </div>
+                <div class="card-body">
+                    <div class="p-3 bg-light rounded">{{ complaint.response }}</div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info d-flex align-items-center gap-2">
+                <i class="bi bi-hourglass-split fs-4"></i>
+                <span>No response yet. Our team is reviewing your complaint.</span>
+            </div>
+        {% endif %}
+
+        <div class="mt-3">
+            <a href="{{ path('complaint_index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to My Complaints
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

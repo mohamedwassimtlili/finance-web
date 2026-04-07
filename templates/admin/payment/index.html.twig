@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}All Payments (Admin){% endblock %}
+{% block page_title %}All Payments{% endblock %}
+
+{% block body %}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-credit-card me-2"></i>Payment Directory (Paymee)</h3>
+        <span class="badge bg-secondary ms-2">{{ transactions|length }} total</span>
+    </div>
+    <div class="card-body p-0">
+        {% if transactions is empty %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox" style="font-size:3rem;"></i>
+                <p class="mt-2">No payments processed yet.</p>
+            </div>
+        {% else %}
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>#</th><th>Client</th><th>Amount (TND)</th><th>Note</th><th>Status</th><th>Currency</th><th>Date</th></tr>
+                </thead>
+                <tbody>
+                {% for t in transactions %}
+                    <tr>
+                        <td>{{ t.id }}</td>
+                        <td>{{ t.user.name }}<br><small class="text-muted">{{ t.user.email }}</small></td>
+                        <td class="fw-semibold">{{ t.amount|number_format(2, '.', ',') }}</td>
+                        <td>{{ t.description|split('[paymee:')[0]|trim|default('—') }}</td>
+                        <td>
+                            {% if t.status == 'COMPLETED' %}<span class="badge bg-success">Completed</span>
+                            {% elseif t.status == 'PENDING' %}<span class="badge bg-warning text-dark">Pending</span>
+                            {% elseif t.status == 'FAILED' %}<span class="badge bg-danger">Failed</span>
+                            {% elseif t.status == 'CANCELLED' %}<span class="badge bg-secondary">Cancelled</span>
+                            {% else %}<span class="badge bg-info">{{ t.status }}</span>{% endif %}
+                        </td>
+                        <td>{{ t.currency }}</td>
+                        <td>{{ t.createdAt ? t.createdAt|date('d/m/Y H:i') : '—' }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Expense{% endblock %}
+{% block page_title %}Edit Expense{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header"><h3 class="card-title"><i class="bi bi-pencil me-2"></i>Edit Expense</h3></div>
+            <div class="card-body">
+                <form method="post" action="{{ path('finance_expense_edit', {id: expense.id}) }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Amount (TND)</label>
+                        <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required value="{{ expense.amount }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category</label>
+                        <select name="category" class="form-select">
+                            <option value="">— None —</option>
+                            {% for cat in ['Food','Transport','Health','Housing','Education','Entertainment','Other'] %}
+                                <option {% if expense.category == cat %}selected{% endif %}>{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Date</label>
+                        <input type="date" name="expense_date" class="form-control" required value="{{ expense.expenseDate|date('Y-m-d') }}">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea name="description" class="form-control" rows="2">{{ expense.description }}</textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Save Changes</button>
+                        <a href="{{ expense.budget ? path('finance_budget_show', {id: expense.budget.id}) : path('finance_expenses') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

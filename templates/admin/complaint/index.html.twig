@@ -1,0 +1,55 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}All Complaints (Admin){% endblock %}
+{% block page_title %}All Complaints{% endblock %}
+
+{% block body %}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-megaphone me-2"></i>Complaint Directory</h3>
+        <span class="badge bg-secondary ms-2">{{ complaints|length }} total</span>
+    </div>
+    <div class="card-body p-0">
+        {% if complaints is empty %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox" style="font-size:3rem;"></i>
+                <p class="mt-2">No complaints submitted yet.</p>
+            </div>
+        {% else %}
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>#</th><th>Client</th><th>Subject</th><th>Date</th><th>Status</th><th>Response</th><th class="text-end">Action</th></tr>
+                </thead>
+                <tbody>
+                {% for c in complaints %}
+                    <tr>
+                        <td>{{ c.id }}</td>
+                        <td>{{ c.user ? c.user.name : 'N/A' }}<br>
+                            <small class="text-muted">{{ c.user ? c.user.email : '' }}</small></td>
+                        <td>{{ c.subject|slice(0,60) }}{% if c.subject|length > 60 %}…{% endif %}</td>
+                        <td>{{ c.complaintDate|date('d/m/Y') }}</td>
+                        <td>
+                            {% if c.status == 'resolved' %}<span class="badge bg-success">Resolved</span>
+                            {% elseif c.status == 'in_progress' %}<span class="badge bg-info">In Progress</span>
+                            {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if c.response %}
+                                <i class="bi bi-check2-circle text-success"></i> Done
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ path('admin_complaint_show', {id: c.id}) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-chat-dots"></i> Respond
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

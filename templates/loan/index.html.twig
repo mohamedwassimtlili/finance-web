@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Loans{% endblock %}
+{% block page_title %}My Loans{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="text-muted mb-0">Overview of all your active and past loans.</p>
+    <a href="{{ path('loan_new') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i> Request a Loan
+    </a>
+</div>
+
+{% for msg in app.flashes('success') %}
+    <div class="alert alert-success alert-dismissible fade show">
+        {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+{% endfor %}
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-bank me-2"></i>Loan List</h3>
+    </div>
+    <div class="card-body p-0">
+        {% if loans is empty %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox" style="font-size:3rem;"></i>
+                <p class="mt-2">You have no loans yet.</p>
+            </div>
+        {% else %}
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Amount (TND)</th>
+                        <th>Interest Rate</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Repayments</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for loan in loans %}
+                    <tr>
+                        <td>{{ loan.id }}</td>
+                        <td>{{ loan.amount|number_format(2, '.', ',') }}</td>
+                        <td>{{ loan.interestRate }}%</td>
+                        <td>{{ loan.startDate|date('d/m/Y') }}</td>
+                        <td>{{ loan.endDate|date('d/m/Y') }}</td>
+                        <td>
+                            {% if loan.status == 'active' %}
+                                <span class="badge bg-success">Active</span>
+                            {% elseif loan.status == 'paid' %}
+                                <span class="badge bg-secondary">Paid</span>
+                            {% elseif loan.status == 'defaulted' %}
+                                <span class="badge bg-danger">Defaulted</span>
+                            {% else %}
+                                <span class="badge bg-info">{{ loan.status|capitalize }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ loan.repayments|length }}</td>
+                        <td class="text-end">
+                            <a href="{{ path('loan_show', {id: loan.id}) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

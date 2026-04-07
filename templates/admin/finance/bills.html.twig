@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}All Bills (Admin){% endblock %}
+{% block page_title %}All Bills{% endblock %}
+
+{% block body %}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-file-earmark-text me-2"></i>Bill Directory</h3>
+        <span class="badge bg-secondary ms-2">{{ bills|length }} total</span>
+    </div>
+    <div class="card-body p-0">
+        {% if bills is empty %}
+            <div class="text-center py-5 text-muted"><i class="bi bi-inbox" style="font-size:3rem;"></i><p class="mt-2">No bills found.</p></div>
+        {% else %}
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>#</th><th>Owner</th><th>Budget</th><th>Name</th><th>Amount (TND)</th><th>Due Day</th><th>Frequency</th><th>Category</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                {% for bill in bills %}
+                    <tr>
+                        <td>{{ bill.id }}</td>
+                        <td>{{ bill.budget.user.name }}<br><small class="text-muted">{{ bill.budget.user.email }}</small></td>
+                        <td>{{ bill.budget.name }}</td>
+                        <td>{{ bill.name }}</td>
+                        <td>{{ bill.amount|number_format(2,'.', ',') }}</td>
+                        <td>Day {{ bill.dueDay }}</td>
+                        <td>{{ bill.frequency|capitalize }}</td>
+                        <td>{{ bill.category|default('—') }}</td>
+                        <td>
+                            {% if bill.status == 'PAID' %}<span class="badge bg-success">Paid</span>
+                            {% else %}<span class="badge bg-warning text-dark">Unpaid</span>{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

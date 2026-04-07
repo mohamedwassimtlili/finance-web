@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Bill{% endblock %}
+{% block page_title %}Edit Bill — {{ bill.name }}{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header"><h3 class="card-title"><i class="bi bi-pencil me-2"></i>Edit Bill</h3></div>
+            <div class="card-body">
+                <form method="post" action="{{ path('finance_bill_edit', {id: bill.id}) }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Bill Name</label>
+                        <input type="text" name="name" class="form-control" required value="{{ bill.name }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Amount (TND)</label>
+                        <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required value="{{ bill.amount }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Due Day</label>
+                            <input type="number" min="1" max="31" name="due_day" class="form-control" required value="{{ bill.dueDay }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Frequency</label>
+                            <select name="frequency" class="form-select">
+                                {% for freq in ['monthly','quarterly','annually','one-time'] %}
+                                    <option {% if bill.frequency == freq %}selected{% endif %}>{{ freq }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category</label>
+                        <select name="category" class="form-select">
+                            <option value="">— None —</option>
+                            {% for cat in ['Utilities','Rent','Insurance','Subscription','Internet','Other'] %}
+                                <option {% if bill.category == cat %}selected{% endif %}>{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea name="description" class="form-control" rows="2">{{ bill.description }}</textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Save Changes</button>
+                        <a href="{{ bill.budget ? path('finance_budget_show', {id: bill.budget.id}) : path('finance_bills') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

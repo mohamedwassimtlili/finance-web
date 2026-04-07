@@ -1,0 +1,58 @@
+{% extends 'base.html.twig' %}
+{% block title %}Edit Asset{% endblock %}
+{% block page_title %}Edit Asset — {{ asset.reference }}{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card card-warning">
+            <div class="card-header"><h3 class="card-title">Edit Asset Details</h3></div>
+            <form method="post">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Reference</label>
+                            <input type="text" name="reference" class="form-control" value="{{ asset.reference }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Type</label>
+                            <select name="type" class="form-select" required>
+                                <option value="">-- Select type --</option>
+                                {% for opt in ['vehicle', 'property', 'equipment', 'other'] %}
+                                    <option value="{{ opt }}" {{ asset.type == opt ? 'selected' : '' }}>{{ opt|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Brand</label>
+                            <input type="text" name="brand" class="form-control" value="{{ asset.brand }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Manufacture Date <span class="text-danger">*</span></label>
+                            <input type="date" name="manufacture_date" class="form-control"
+                                   value="{{ asset.manufactureDate|date('Y-m-d') }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Declared Value (TND) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" min="0" name="declared_value" class="form-control"
+                                   value="{{ asset.declaredValue }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Location</label>
+                            <input type="text" name="location" class="form-control" value="{{ asset.location }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" class="form-control" rows="3">{{ asset.description }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <a href="{{ path('insurance_assets') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-save me-1"></i>Update Asset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
