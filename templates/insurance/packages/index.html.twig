@@ -3,6 +3,53 @@
 {% block page_title %}Available Insurance Packages{% endblock %}
 
 {% block body %}
+
+{# ── Search / Filter / Sort ── #}
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body py-2">
+        <form method="get" action="{{ path('insurance_packages') }}" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted mb-1">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Package name, coverage details…">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Asset Type</label>
+                <select name="asset_type" class="form-select">
+                    <option value="">All types</option>
+                    {% for t in ['Vehicle', 'Property', 'Equipment', 'Electronics', 'Livestock', 'Other'] %}
+                        <option value="{{ t }}" {{ assetType == t ? 'selected' : '' }}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Sort by</label>
+                <select name="order" class="form-select">
+                    <option value="p.name"           {{ orderBy == 'p.name'           ? 'selected' : '' }}>Name</option>
+                    <option value="p.basePrice"      {{ orderBy == 'p.basePrice'      ? 'selected' : '' }}>Base Price</option>
+                    <option value="p.durationMonths" {{ orderBy == 'p.durationMonths' ? 'selected' : '' }}>Duration</option>
+                    <option value="p.riskMultiplier" {{ orderBy == 'p.riskMultiplier' ? 'selected' : '' }}>Risk Multiplier</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label small text-muted mb-1">Dir</label>
+                <select name="dir" class="form-select">
+                    <option value="ASC"  {{ dir == 'ASC'  ? 'selected' : '' }}>↑ Asc</option>
+                    <option value="DESC" {{ dir == 'DESC' ? 'selected' : '' }}>↓ Desc</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <a href="{{ path('insurance_packages') }}" class="btn btn-outline-secondary" title="Reset"><i class="bi bi-x-lg"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<p class="text-muted mb-3">{{ packages|length }} package(s) found</p>
+
 <div class="row g-4">
     {% for package in packages %}
     <div class="col-lg-4 col-md-6">
@@ -35,7 +82,7 @@
     </div>
     {% else %}
     <div class="col-12">
-        <div class="alert alert-info">No insurance packages are currently available.</div>
+        <div class="alert alert-info">No packages found for the current filters.</div>
     </div>
     {% endfor %}
 </div>

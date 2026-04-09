@@ -12,8 +12,52 @@
     {% endfor %}
 {% endfor %}
 
+{# ── Search / Filter / Sort ── #}
+<div class="card mb-3 border-0 shadow-sm">
+    <div class="card-body py-2">
+        <form method="get" action="{{ path('insurance_requests') }}" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted mb-1">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Asset reference, package name…">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All statuses</option>
+                    {% for s in ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] %}
+                        <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ s|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Sort by</label>
+                <select name="order" class="form-select">
+                    <option value="r.createdAt"         {{ orderBy == 'r.createdAt'         ? 'selected' : '' }}>Submitted Date</option>
+                    <option value="r.calculatedPremium" {{ orderBy == 'r.calculatedPremium' ? 'selected' : '' }}>Premium</option>
+                    <option value="r.status"            {{ orderBy == 'r.status'            ? 'selected' : '' }}>Status</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label small text-muted mb-1">Dir</label>
+                <select name="dir" class="form-select">
+                    <option value="DESC" {{ dir == 'DESC' ? 'selected' : '' }}>↓ Desc</option>
+                    <option value="ASC"  {{ dir == 'ASC'  ? 'selected' : '' }}>↑ Asc</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <a href="{{ path('insurance_requests') }}" class="btn btn-outline-secondary" title="Reset"><i class="bi bi-x-lg"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="row mb-3">
-    <div class="col-12 d-flex justify-content-end">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <p class="text-muted mb-0">{{ requests|length }} request(s) found</p>
         <a href="{{ path('insurance_request_new') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle me-1"></i> New Contract Request
         </a>
@@ -29,9 +73,21 @@
                     <th>#</th>
                     <th>Asset</th>
                     <th>Package</th>
-                    <th>Premium</th>
-                    <th>Status</th>
-                    <th>Submitted</th>
+                    <th>
+                        <a href="{{ path('insurance_requests', {q: q, status: status, order: 'r.calculatedPremium', dir: (orderBy == 'r.calculatedPremium' and dir == 'ASC') ? 'DESC' : 'ASC'}) }}" class="text-decoration-none text-dark">
+                            Premium {% if orderBy == 'r.calculatedPremium' %}<i class="bi bi-arrow-{{ dir == 'ASC' ? 'up' : 'down' }}"></i>{% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ path('insurance_requests', {q: q, status: status, order: 'r.status', dir: (orderBy == 'r.status' and dir == 'ASC') ? 'DESC' : 'ASC'}) }}" class="text-decoration-none text-dark">
+                            Status {% if orderBy == 'r.status' %}<i class="bi bi-arrow-{{ dir == 'ASC' ? 'up' : 'down' }}"></i>{% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ path('insurance_requests', {q: q, status: status, order: 'r.createdAt', dir: (orderBy == 'r.createdAt' and dir == 'ASC') ? 'DESC' : 'ASC'}) }}" class="text-decoration-none text-dark">
+                            Submitted {% if orderBy == 'r.createdAt' %}<i class="bi bi-arrow-{{ dir == 'ASC' ? 'up' : 'down' }}"></i>{% endif %}
+                        </a>
+                    </th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -65,7 +121,7 @@
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="7" class="text-center text-muted py-4">No contract requests yet.</td></tr>
+                <tr><td colspan="7" class="text-center text-muted py-4">No requests found for the current filters.</td></tr>
             {% endfor %}
             </tbody>
         </table>

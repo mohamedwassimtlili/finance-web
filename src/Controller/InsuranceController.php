@@ -18,12 +18,21 @@ class InsuranceController extends AbstractController
     // ─── ASSETS ───────────────────────────────────────────────────────────────
 
     #[Route('/assets', name: 'assets', methods: ['GET'])]
-    public function assets(InsuredAssetRepository $repo): Response
+    public function assets(Request $request, InsuredAssetRepository $repo): Response
     {
-        $assets = $repo->findBy(['user' => $this->getUser()]);
+        $q       = trim((string) $request->query->get('q', ''));
+        $type    = (string) $request->query->get('type', '');
+        $orderBy = (string) $request->query->get('order', 'a.createdAt');
+        $dir     = strtoupper((string) $request->query->get('dir', 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
+
+        $assets = $repo->search($this->getUser(), $q ?: null, $type ?: null, $orderBy, $dir);
 
         return $this->render('insurance/assets/index.html.twig', [
-            'assets' => $assets,
+            'assets'  => $assets,
+            'q'       => $q,
+            'type'    => $type,
+            'orderBy' => $orderBy,
+            'dir'     => $dir,
         ]);
     }
 
@@ -93,24 +102,42 @@ class InsuranceController extends AbstractController
     // ─── PACKAGES ─────────────────────────────────────────────────────────────
 
     #[Route('/packages', name: 'packages', methods: ['GET'])]
-    public function packages(InsurancePackageRepository $repo): Response
+    public function packages(Request $request, InsurancePackageRepository $repo): Response
     {
-        $packages = $repo->findBy(['isActive' => true]);
+        $q         = trim((string) $request->query->get('q', ''));
+        $assetType = (string) $request->query->get('asset_type', '');
+        $orderBy   = (string) $request->query->get('order', 'p.name');
+        $dir       = strtoupper((string) $request->query->get('dir', 'ASC')) === 'ASC' ? 'ASC' : 'DESC';
+
+        $packages = $repo->search($q ?: null, $assetType ?: null, $orderBy, $dir);
 
         return $this->render('insurance/packages/index.html.twig', [
-            'packages' => $packages,
+            'packages'  => $packages,
+            'q'         => $q,
+            'assetType' => $assetType,
+            'orderBy'   => $orderBy,
+            'dir'       => $dir,
         ]);
     }
 
     // ─── CONTRACT REQUESTS ────────────────────────────────────────────────────
 
     #[Route('/requests', name: 'requests', methods: ['GET'])]
-    public function requests(ContractRequestRepository $repo): Response
+    public function requests(Request $request, ContractRequestRepository $repo): Response
     {
-        $requests = $repo->findBy(['user' => $this->getUser()], ['createdAt' => 'DESC']);
+        $q       = trim((string) $request->query->get('q', ''));
+        $status  = (string) $request->query->get('status', '');
+        $orderBy = (string) $request->query->get('order', 'r.createdAt');
+        $dir     = strtoupper((string) $request->query->get('dir', 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
+
+        $requests = $repo->search($this->getUser(), $q ?: null, $status ?: null, $orderBy, $dir);
 
         return $this->render('insurance/requests/index.html.twig', [
             'requests' => $requests,
+            'q'        => $q,
+            'status'   => $status,
+            'orderBy'  => $orderBy,
+            'dir'      => $dir,
         ]);
     }
 

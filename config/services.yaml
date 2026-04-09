@@ -27,3 +27,7 @@ services:
         arguments:
             $paymeeApiKey: '%env(PAYMEE_API_KEY)%'
             $paymeeUrl: '%env(PAYMEE_PAYMENT_URL)%'
+
+    App\Controller\InsuranceAssistantController:
+        arguments:
+            $fastapiUrl: '%env(FASTAPI_URL)%'

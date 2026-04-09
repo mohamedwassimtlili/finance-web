@@ -12,9 +12,54 @@
     {% endfor %}
 {% endfor %}
 
+{# ── Search / Filter / Sort ── #}
+<div class="card mb-3 border-0 shadow-sm">
+    <div class="card-body py-2">
+        <form method="get" action="{{ path('insurance_assets') }}" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted mb-1">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Reference, brand, location…">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Type</label>
+                <select name="type" class="form-select">
+                    <option value="">All types</option>
+                    {% for t in ['Vehicle', 'Property', 'Equipment', 'Electronics', 'Livestock', 'Other'] %}
+                        <option value="{{ t }}" {{ type == t ? 'selected' : '' }}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Sort by</label>
+                <select name="order" class="form-select">
+                    <option value="a.createdAt"       {{ orderBy == 'a.createdAt'       ? 'selected' : '' }}>Date Added</option>
+                    <option value="a.reference"       {{ orderBy == 'a.reference'       ? 'selected' : '' }}>Reference</option>
+                    <option value="a.brand"           {{ orderBy == 'a.brand'           ? 'selected' : '' }}>Brand</option>
+                    <option value="a.declaredValue"   {{ orderBy == 'a.declaredValue'   ? 'selected' : '' }}>Declared Value</option>
+                    <option value="a.manufactureDate" {{ orderBy == 'a.manufactureDate' ? 'selected' : '' }}>Manufacture Date</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label small text-muted mb-1">Dir</label>
+                <select name="dir" class="form-select">
+                    <option value="DESC" {{ dir == 'DESC' ? 'selected' : '' }}>↓ Desc</option>
+                    <option value="ASC"  {{ dir == 'ASC'  ? 'selected' : '' }}>↑ Asc</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <a href="{{ path('insurance_assets') }}" class="btn btn-outline-secondary" title="Reset"><i class="bi bi-x-lg"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="row mb-3">
     <div class="col-12 d-flex justify-content-between align-items-center">
-        <p class="text-muted mb-0">{{ assets|length }} asset(s) registered</p>
+        <p class="text-muted mb-0">{{ assets|length }} asset(s) found</p>
         <a href="{{ path('insurance_asset_new') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle me-1"></i> Register New Asset
         </a>
@@ -28,12 +73,28 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Reference</th>
+                    <th>
+                        <a href="{{ path('insurance_assets', {q: q, type: type, order: 'a.reference', dir: (orderBy == 'a.reference' and dir == 'ASC') ? 'DESC' : 'ASC'}) }}" class="text-decoration-none text-dark">
+                            Reference {% if orderBy == 'a.reference' %}<i class="bi bi-arrow-{{ dir == 'ASC' ? 'up' : 'down' }}"></i>{% endif %}
+                        </a>
+                    </th>
                     <th>Type</th>
-                    <th>Brand</th>
-                    <th>Declared Value</th>
+                    <th>
+                        <a href="{{ path('insurance_assets', {q: q, type: type, order: 'a.brand', dir: (orderBy == 'a.brand' and dir == 'ASC') ? 'DESC' : 'ASC'}) }}" class="text-decoration-none text-dark">
+                            Brand {% if orderBy == 'a.brand' %}<i class="bi bi-arrow-{{ dir == 'ASC' ? 'up' : 'down' }}"></i>{% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ path('insurance_assets', {q: q, type: type, order: 'a.declaredValue', dir: (orderBy == 'a.declaredValue' and dir == 'ASC') ? 'DESC' : 'ASC'}) }}" class="text-decoration-none text-dark">
+                            Declared Value {% if orderBy == 'a.declaredValue' %}<i class="bi bi-arrow-{{ dir == 'ASC' ? 'up' : 'down' }}"></i>{% endif %}
+                        </a>
+                    </th>
                     <th>Approved Value</th>
-                    <th>Manufacture Date</th>
+                    <th>
+                        <a href="{{ path('insurance_assets', {q: q, type: type, order: 'a.manufactureDate', dir: (orderBy == 'a.manufactureDate' and dir == 'ASC') ? 'DESC' : 'ASC'}) }}" class="text-decoration-none text-dark">
+                            Manufacture Date {% if orderBy == 'a.manufactureDate' %}<i class="bi bi-arrow-{{ dir == 'ASC' ? 'up' : 'down' }}"></i>{% endif %}
+                        </a>
+                    </th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -62,7 +123,7 @@
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="8" class="text-center text-muted py-4">No assets registered yet.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">No assets found for the current filters.</td></tr>
             {% endfor %}
             </tbody>
         </table>
