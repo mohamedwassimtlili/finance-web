@@ -5,9 +5,9 @@
 
 {% block body %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <p class="text-muted mb-0">All your payments processed via Paymee.</p>
-    <a href="{{ path('payment_create') }}" class="btn btn-primary">
-        <i class="bi bi-credit-card me-1"></i> New Payment
+    <p class="text-muted mb-0">Manage all your payment records.</p>
+    <a href="{{ path('payment_new') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i> New Payment
     </a>
 </div>
 
@@ -17,28 +17,54 @@
 
 <div class="card shadow-sm">
     <div class="card-header">
-        <h3 class="card-title"><i class="bi bi-credit-card me-2"></i>Payment History</h3>
-        <span class="badge bg-secondary ms-2">{{ transactions|length }} total</span>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h3 class="card-title mb-0"><i class="bi bi-credit-card me-2"></i>Payment History</h3>
+                <span class="badge bg-secondary ms-2" id="payments-count">{{ transactions|length }} total</span>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <div class="input-group" style="width:220px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" id="payments-search" class="form-control" placeholder="Search payments…"
+                           oninput="filterPayments()">
+                </div>
+                <select id="payments-status-filter" class="form-select" style="width:150px;" onchange="filterPayments()">
+                    <option value="">All Statuses</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="FAILED">Failed</option>
+                    <option value="CANCELLED">Cancelled</option>
+                </select>
+            </div>
+        </div>
     </div>
     <div class="card-body p-0">
         {% if transactions is empty %}
             <div class="text-center py-5 text-muted">
                 <i class="bi bi-credit-card-2-front" style="font-size:3rem;"></i>
                 <p class="mt-2">No payments yet.</p>
-                <a href="{{ path('payment_create') }}" class="btn btn-outline-primary btn-sm">Make a Payment</a>
+                <a href="{{ path('payment_new') }}" class="btn btn-outline-primary btn-sm">Add a Payment</a>
             </div>
         {% else %}
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0" id="payments-table">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Amount (TND)</th><th>Note</th><th>Status</th><th>Date</th></tr>
+                    <tr>
+                        <th class="sortable" onclick="sortTable('payments-table',0,this)"># <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
+                        <th class="sortable" onclick="sortTable('payments-table',1,this)">Amount (TND) <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
+                        <th class="sortable" onclick="sortTable('payments-table',2,this)">Type <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
+                        <th class="sortable" onclick="sortTable('payments-table',3,this)">Description <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
+                        <th class="sortable" onclick="sortTable('payments-table',4,this)">Status <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
+                        <th class="sortable" onclick="sortTable('payments-table',5,this)">Date <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
+                        <th class="text-end">Actions</th>
+                    </tr>
                 </thead>
                 <tbody>
                 {% for t in transactions %}
-                    {% set note = t.description|replace({('[paymee:' ~ t.description|split('[paymee:')[1]|default('')): ''})|trim %}
                     <tr>
                         <td>{{ t.id }}</td>
                         <td class="fw-semibold">{{ t.amount|number_format(2, '.', ',') }}</td>
-                        <td>{{ t.description|split('[paymee:')[0]|trim|default('—') }}</td>
+                        <td>{{ t.type|capitalize }}</td>
+                        <td>{{ t.description|default('—')|slice(0,60) }}{% if t.description|length > 60 %}…{% endif %}</td>
                         <td>
                             {% if t.status == 'COMPLETED' %}<span class="badge bg-success">Completed</span>
                             {% elseif t.status == 'PENDING' %}<span class="badge bg-warning text-dark">Pending</span>
@@ -46,12 +72,78 @@
                             {% elseif t.status == 'CANCELLED' %}<span class="badge bg-secondary">Cancelled</span>
                             {% else %}<span class="badge bg-info">{{ t.status }}</span>{% endif %}
                         </td>
-                        <td>{{ t.createdAt ? t.createdAt|date('d/m/Y H:i') : '—' }}</td>
+                        <td data-sort="{{ t.createdAt ? t.createdAt|date('Y-m-d H:i') : '' }}">
+                            {{ t.createdAt ? t.createdAt|date('d/m/Y H:i') : '—' }}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ path('payment_show', {id: t.id}) }}" class="btn btn-sm btn-outline-primary" title="View">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ path('payment_edit', {id: t.id}) }}" class="btn btn-sm btn-outline-secondary" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="post" action="{{ path('payment_delete', {id: t.id}) }}" class="d-inline"
+                                  onsubmit="return confirm('Delete this payment?')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete_payment_' ~ t.id) }}">
+                                <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
                     </tr>
                 {% endfor %}
                 </tbody>
             </table>
+            <div id="payments-nodata" class="text-center py-4 text-muted d-none">
+                <i class="bi bi-search" style="font-size:2rem;"></i>
+                <p class="mt-2">No matching payments found.</p>
+            </div>
         {% endif %}
     </div>
 </div>
+
+<style>
+.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.sortable:hover { background: rgba(0,0,0,.04); }
+.sort-icon { transition: transform .2s; }
+.sort-asc .sort-icon  { color: var(--bs-primary) !important; }
+.sort-desc .sort-icon { color: var(--bs-primary) !important; transform: rotate(180deg); }
+</style>
+<script>
+function getCellText(td) {
+    return (td.dataset.sort !== undefined ? td.dataset.sort : td.innerText).trim().toLowerCase();
+}
+function sortTable(tableId, colIndex, th) {
+    const table = document.getElementById(tableId);
+    const tbody = table.querySelector('tbody');
+    const rows  = Array.from(tbody.querySelectorAll('tr'));
+    const ths   = table.querySelectorAll('thead th');
+    const asc   = !th.classList.contains('sort-asc');
+    ths.forEach(h => h.classList.remove('sort-asc','sort-desc'));
+    th.classList.add(asc ? 'sort-asc' : 'sort-desc');
+    rows.sort((a, b) => {
+        const av = getCellText(a.cells[colIndex]);
+        const bv = getCellText(b.cells[colIndex]);
+        const an = parseFloat(av.replace(/,/g,''));
+        const bn = parseFloat(bv.replace(/,/g,''));
+        if (!isNaN(an) && !isNaN(bn)) return asc ? an - bn : bn - an;
+        return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    rows.forEach(r => tbody.appendChild(r));
+}
+function filterPayments() {
+    const table  = document.getElementById('payments-table');
+    if (!table) return;
+    const search = document.getElementById('payments-search').value.toLowerCase();
+    const status = document.getElementById('payments-status-filter').value.toLowerCase();
+    const rows   = table.querySelectorAll('tbody tr');
+    let visible  = 0;
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const show = (!search || text.includes(search)) && (!status || text.includes(status));
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    document.getElementById('payments-count').textContent = visible + ' total';
+    document.getElementById('payments-nodata').classList.toggle('d-none', visible > 0);
+}
+</script>
 {% endblock %}

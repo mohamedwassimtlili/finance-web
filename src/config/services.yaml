@@ -1,0 +1,13 @@
+parameters:
+    boldsign.api_key:    '%env(Njc5M2I1NzYtMjVmZC00ZGExLTlmODktZDgwMDBhOWQ4ZDAx)%'
+    boldsign.base_url:   '%env(BOLDSIGN_BASE_URL)%'
+    boldsign.webhook_url: '%env(https://iridaceous-misty-vivaciously.ngrok-free.dev/webhook/boldsign)%'
+
+services:
+    App\Service\BoldSignService:
+        arguments:
+            $apiKey:     '%boldsign.api_key%'
+            $baseUrl:    '%boldsign.base_url%'
+            $webhookUrl: '%boldsign.webhook_url%'
+
+

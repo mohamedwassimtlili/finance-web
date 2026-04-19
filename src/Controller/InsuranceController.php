@@ -200,4 +200,6 @@ class InsuranceController extends AbstractController
 
         return $this->redirectToRoute('insurance_requests');
     }
+
+   
 }

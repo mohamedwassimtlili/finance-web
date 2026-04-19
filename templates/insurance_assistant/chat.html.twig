@@ -8,13 +8,19 @@
     <div class="col-lg-8">
 
         {% for msg in app.flashes('error') %}
-            <div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+            <div class="alert alert-danger alert-dismissible fade show">
+                {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
         {% endfor %}
         {% for msg in app.flashes('success') %}
-            <div class="alert alert-success alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+            <div class="alert alert-success alert-dismissible fade show">
+                {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
         {% endfor %}
 
         <div class="card shadow-sm">
+
+            {# ── Header ── #}
             <div class="card-header d-flex justify-content-between align-items-center"
                  style="background:linear-gradient(135deg,#0d6efd,#0dcaf0);">
                 <h5 class="mb-0 text-white">
@@ -71,37 +77,177 @@
             <div class="card-footer bg-white border-top">
                 <form method="post" action="{{ path('insurance_assistant_chat') }}"
                       id="chat-form" class="d-flex gap-2">
+
                     <input type="text" name="message" id="message-input"
                            class="form-control"
                            placeholder="Ask about insurance packages, assets, premiums…"
                            autocomplete="off" required autofocus>
+
+                    <button type="button" id="voice-btn"
+                            class="btn btn-outline-secondary px-3"
+                            title="Click to speak">
+                        <i class="bi bi-mic-fill" id="voice-icon"></i>
+                    </button>
+
                     <button type="submit" class="btn btn-primary px-4" id="send-btn">
                         <i class="bi bi-send-fill"></i>
                     </button>
                 </form>
-                <small class="text-muted mt-1 d-block">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Your conversation history is remembered for this session.
-                    Use <strong>Reset</strong> to start fresh.
-                </small>
-            </div>
-        </div>
 
+                {# ── Bottom bar ── #}
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        History remembered for this session. Use <strong>Reset</strong> to start fresh.
+                        <span id="voice-status" class="ms-2 text-danger fw-semibold d-none"></span>
+                    </small>
+
+                    {# ── Speak replies toggle ── #}
+                    <div class="form-check form-switch mb-0 ms-3 d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="checkbox"
+                               role="switch" id="voice-reply-toggle" style="cursor:pointer;">
+                        <label class="form-check-label text-muted small d-flex align-items-center gap-1"
+                               for="voice-reply-toggle">
+                            <i class="bi bi-volume-up-fill" id="speaker-icon" style="font-size:14px;"></i>
+                            Speak replies
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block javascripts %}
 <script>
-    // Auto-scroll chat window to bottom
+    {# ── Auto-scroll ── #}
     const win = document.getElementById('chat-window');
     if (win) win.scrollTop = win.scrollHeight;
 
-    // Disable send button while submitting
+    {# ── Disable send while submitting ── #}
     document.getElementById('chat-form')?.addEventListener('submit', function () {
         const btn = document.getElementById('send-btn');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
     });
+
+    {# ── Shared refs ── #}
+    const voiceBtn    = document.getElementById('voice-btn');
+    const voiceIcon   = document.getElementById('voice-icon');
+    const voiceStatus = document.getElementById('voice-status');
+    const msgInput    = document.getElementById('message-input');
+    const toggle      = document.getElementById('voice-reply-toggle');
+    const speakerIcon = document.getElementById('speaker-icon');
+
+    {# ══════════════════════════════════════════
+       1. TEXT-TO-SPEECH
+    ══════════════════════════════════════════ #}
+    const TTS_KEY = 'insurance_voice_reply';
+    toggle.checked = localStorage.getItem(TTS_KEY) === 'true';
+    updateSpeakerIcon();
+
+    toggle.addEventListener('change', () => {
+        localStorage.setItem(TTS_KEY, toggle.checked);
+        updateSpeakerIcon();
+        if (!toggle.checked) window.speechSynthesis.cancel();
+    });
+
+    function updateSpeakerIcon() {
+        speakerIcon.className = toggle.checked
+            ? 'bi bi-volume-up-fill text-primary'
+            : 'bi bi-volume-mute text-muted';
+    }
+
+    function speakText(text) {
+        if (!window.speechSynthesis || !toggle.checked) return;
+
+        const clean = text
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/`(.*?)`/g, '$1')
+            .replace(/#{1,6}\s/g, '')
+            .trim();
+
+        window.speechSynthesis.cancel();
+        const utter  = new SpeechSynthesisUtterance(clean);
+        utter.lang   = 'en-US';
+        utter.rate   = 1;
+        utter.pitch  = 1;
+        utter.volume = 1;
+        window.speechSynthesis.speak(utter);
+    }
+
+    {# Speak last assistant reply on page load if toggle is on #}
+    const bubbles    = document.querySelectorAll('#chat-window .bi-robot');
+    const lastBubble = bubbles.length
+        ? bubbles[bubbles.length - 1].closest('.d-flex')?.querySelector('.p-3')
+        : null;
+
+    if (lastBubble && toggle.checked) {
+        setTimeout(() => speakText(lastBubble.innerText), 400);
+    }
+
+    {# ══════════════════════════════════════════
+       2. VOICE-TO-TEXT
+    ══════════════════════════════════════════ #}
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        voiceBtn.style.display = 'none';
+    } else {
+        const recognition          = new SpeechRecognition();
+        recognition.lang           = 'en-US';
+        recognition.continuous     = false;
+        recognition.interimResults = true;
+        let isListening            = false;
+
+        function startListening() {
+            isListening = true;
+            voiceBtn.classList.replace('btn-outline-secondary', 'btn-danger');
+            voiceIcon.classList.replace('bi-mic-fill', 'bi-stop-fill');
+            voiceStatus.textContent = 'Listening…';
+            voiceStatus.classList.remove('d-none');
+            msgInput.placeholder = 'Speak now…';
+            recognition.start();
+        }
+
+        function stopListening() {
+            isListening = false;
+            voiceBtn.classList.replace('btn-danger', 'btn-outline-secondary');
+            voiceIcon.classList.replace('bi-stop-fill', 'bi-mic-fill');
+            voiceStatus.classList.add('d-none');
+            msgInput.placeholder = 'Ask about insurance packages, assets, premiums…';
+            recognition.stop();
+        }
+
+        voiceBtn.addEventListener('click', () =>
+            isListening ? stopListening() : startListening()
+        );
+
+        recognition.addEventListener('result', (e) => {
+            const transcript = Array.from(e.results)
+                .map(r => r[0].transcript).join('');
+            msgInput.value = transcript;
+
+            if (e.results[e.results.length - 1].isFinal) {
+                stopListening();
+                if (transcript.trim())
+                    document.getElementById('chat-form').requestSubmit();
+            }
+        });
+
+        recognition.addEventListener('error', (e) => {
+            stopListening();
+            voiceStatus.textContent = 'Microphone error: ' + e.error;
+            voiceStatus.classList.remove('d-none');
+            setTimeout(() => voiceStatus.classList.add('d-none'), 3000);
+        });
+
+        recognition.addEventListener('end', () => {
+            if (isListening) stopListening();
+        });
+    }
 </script>
 {% endblock %}

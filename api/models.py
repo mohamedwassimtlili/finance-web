@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional,Any, Dict
 # -----------------------------
 # Request & Response Schemas
 # -----------------------------
@@ -23,9 +23,16 @@ class PromptResponse(BaseModel):
 # -----------------------------
 # Insurance Assistant Schemas
 # -----------------------------
+class UserContext(BaseModel):
+    user:     Dict[str, Any] = {}
+    assets:   list[Dict[str, Any]] = []
+    packages: list[Dict[str, Any]] = []
+    requests: list[Dict[str, Any]] = []
+
 class InsuranceChatRequest(BaseModel):
     user_id: int
     message: str
+    context: UserContext = UserContext()   # ← replaces user_token
 
 class InsuranceChatResponse(BaseModel):
     reply: str

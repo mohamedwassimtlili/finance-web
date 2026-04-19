@@ -18,6 +18,7 @@ class InsuredAsset
     private ?int $id = null;
 
     #[ORM\Column(length: 150, nullable: true)]
+    #[Assert\NotBlank]
     private ?string $reference = null;
 
     #[ORM\Column(length: 50, nullable: true)]

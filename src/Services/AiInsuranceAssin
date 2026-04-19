@@ -1,0 +1,318 @@
+src/Service/GroqInsuranceAssistant.php
+php<?php
+
+namespace App\Service;
+
+use Symfony\Contracts\HttpClient\HttpClientInterface;
+
+class GroqInsuranceAssistant
+{
+    private array $conversationHistory = [];
+    private string $systemPrompt;
+
+    public function __construct(
+        private HttpClientInterface $httpClient,
+        private string $groqApiKey,
+        private string $groqApiUrl,
+        private string $groqModel,
+        ?string $systemPrompt = null,
+        array $initialHistory = []
+    ) {
+        $this->systemPrompt        = $systemPrompt ?? $this->getInsurancePrompt();
+        $this->conversationHistory = $initialHistory;
+    }
+
+    // =========================================================
+    //  PROMPT BUILDERS
+    // =========================================================
+
+    private function getInsurancePrompt(): string
+    {
+        return <<<PROMPT
+You are an expert insurance assistant for a fintech platform called FinanceApp.
+Your role is to help users with:
+- Understanding insurance packages (car and home insurance)
+- Explaining coverage details, premiums and risk multipliers
+- Guiding users through the contract request process
+- Answering questions about insured assets
+- Explaining loan and repayment terms
+- Helping with budget and expense management questions
+
+Rules:
+- Always be professional, concise and friendly
+- If a question is completely unrelated to finance or insurance, politely redirect the user
+- Format responses clearly, use bullet points when listing multiple items
+- Respond in the same language the user writes in (English, French, Arabic, etc.)
+- Never invent specific numbers or policy details you don't have
+PROMPT;
+    }
+
+    public function getInsurancePromptWithContext(array $context): string
+    {
+        $base = $this->getInsurancePrompt();
+
+        $contextBlock  = "\n\n--- USER CONTEXT (use this to give personalized answers) ---\n";
+
+        if (!empty($context['user'])) {
+            $u = $context['user'];
+            $contextBlock .= "User: {$u['name']} ({$u['email']})\n";
+        }
+
+        if (!empty($context['assets'])) {
+            $contextBlock .= "\nInsured Assets:\n";
+            foreach ($context['assets'] as $asset) {
+                $contextBlock .= "  - [{$asset['type']}] Ref: {$asset['reference']}, "
+                    . "Value: {$asset['declaredValue']} TND, "
+                    . "Location: {$asset['location']}\n";
+            }
+        }
+
+        if (!empty($context['contracts'])) {
+            $contextBlock .= "\nActive Contract Requests:\n";
+            foreach ($context['contracts'] as $contract) {
+                $contextBlock .= "  - Asset Ref: {$contract['assetRef']}, "
+                    . "Status: {$contract['status']}, "
+                    . "Premium: {$contract['premium']} TND\n";
+            }
+        }
+
+        if (!empty($context['active_loans'])) {
+            $contextBlock .= "\nActive Loans:\n";
+            foreach ($context['active_loans'] as $loan) {
+                $contextBlock .= "  - Amount: {$loan['amount']} TND, "
+                    . "Rate: {$loan['interestRate']}%, "
+                    . "Status: {$loan['status']}, "
+                    . "Due: {$loan['endDate']}\n";
+            }
+        }
+
+        if (!empty($context['budgets'])) {
+            $contextBlock .= "\nBudgets:\n";
+            foreach ($context['budgets'] as $budget) {
+                $contextBlock .= "  - {$budget['name']}: "
+                    . "{$budget['spentAmount']}/{$budget['amount']} TND spent "
+                    . "({$budget['category']})\n";
+            }
+        }
+
+        $contextBlock .= "--- END OF CONTEXT ---\n";
+
+        return $base . $contextBlock;
+    }
+
+    // =========================================================
+    //  MEMORY MANAGEMENT
+    // =========================================================
+
+    public function withPrompt(string $prompt): static
+    {
+        $clone               = clone $this;
+        $clone->systemPrompt = $prompt;
+        return $clone;
+    }
+
+    public function withContext(array $context): static
+    {
+        $clone               = clone $this;
+        $clone->systemPrompt = $this->getInsurancePromptWithContext($context);
+        return $clone;
+    }
+
+    public function withHistory(array $history): static
+    {
+        $clone                      = clone $this;
+        $clone->conversationHistory = $history;
+        return $clone;
+    }
+
+    public function getHistory(): array
+    {
+        return $this->conversationHistory;
+    }
+
+    public function getSystemPrompt(): string
+    {
+        return $this->systemPrompt;
+    }
+
+    public function clearHistory(): static
+    {
+        $clone                      = clone $this;
+        $clone->conversationHistory = [];
+        return $clone;
+    }
+
+    // =========================================================
+    //  PUBLIC API
+    // =========================================================
+
+    public function ask(string $userMessage): string
+    {
+        $reply = $this->sendToGroq($userMessage);
+
+        // Append to internal memory
+        $this->conversationHistory[] = ['role' => 'user',      'content' => $userMessage];
+        $this->conversationHistory[] = ['role' => 'assistant',  'content' => $reply];
+
+        // Keep last 20 messages to avoid token overflow
+        if (count($this->conversationHistory) > 20) {
+            $this->conversationHistory = array_slice($this->conversationHistory, -20);
+        }
+
+        return $reply;
+    }
+
+    // =========================================================
+    //  PRIVATE — HTTP CALL
+    // =========================================================
+
+    private function sendToGroq(string $userMessage): string
+    {
+        $messages = [
+            ['role' => 'system', 'content' => $this->systemPrompt],
+            ...$this->conversationHistory,
+            ['role' => 'user', 'content' => $userMessage],
+        ];
+
+        $response = $this->httpClient->request('POST', $this->groqApiUrl, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->groqApiKey,
+                'Content-Type'  => 'application/json',
+            ],
+            'json' => [
+                'model'       => $this->groqModel,
+                'messages'    => $messages,
+                'max_tokens'  => 1024,
+                'temperature' => 0.7,
+            ],
+        ]);
+
+        $data = $response->toArray();
+
+        return $data['choices'][0]['message']['content']
+            ?? 'Sorry, I could not process your request.';
+    }
+}
+
+Update AssistantController.php
+php<?php
+
+namespace App\Controller;
+
+use App\Service\GroqInsuranceAssistant;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+
+class AssistantController extends AbstractController
+{
+    public function __construct(
+        private GroqInsuranceAssistant $assistant,
+        private EntityManagerInterface $em
+    ) {}
+
+    #[Route('/assistant', name: 'app_assistant')]
+    public function index(): Response
+    {
+        return $this->render('assistant/index.html.twig');
+    }
+
+    #[Route('/assistant/chat', name: 'app_assistant_chat', methods: ['POST'])]
+    public function chat(Request $request): JsonResponse
+    {
+        $data    = json_decode($request->getContent(), true);
+        $message = $data['message'] ?? '';
+        $history = $data['history'] ?? [];
+        $userId  = $data['user_id'] ?? null;
+
+        if (empty($message)) {
+            return $this->json(['error' => 'Empty message'], 400);
+        }
+
+        try {
+            // Start from the injected service, rebuild with session history + context
+            $assistant = $this->assistant->withHistory($history);
+
+            if ($userId) {
+                $context   = $this->buildUserContext((int) $userId);
+                $assistant = $assistant->withContext($context);
+            }
+
+            $reply = $assistant->ask($message);
+
+            return $this->json([
+                'reply'   => $reply,
+                // Send updated history back to browser so next request stays in sync
+                'history' => $assistant->getHistory(),
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Assistant unavailable: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function buildUserContext(int $userId): array
+    {
+        $user = $this->em->getRepository(\App\Entity\User::class)->find($userId);
+
+        if (!$user) return [];
+
+        $assets = array_map(fn($a) => [
+            'type'          => $a->getType(),
+            'reference'     => $a->getReference(),
+            'declaredValue' => $a->getDeclaredValue(),
+            'location'      => $a->getLocation(),
+        ], $user->getInsuredAssets()->toArray());
+
+        $contracts = [];
+        foreach ($user->getInsuredAssets() as $asset) {
+            foreach ($asset->getContractRequests() as $cr) {
+                $contracts[] = [
+                    'assetRef' => $asset->getReference(),
+                    'status'   => $cr->getStatus(),
+                    'premium'  => $cr->getCalculatedPremium(),
+                ];
+            }
+        }
+
+        $loans = array_map(fn($l) => [
+            'amount'       => $l->getAmount(),
+            'interestRate' => $l->getInterestRate(),
+            'status'       => $l->getStatus(),
+            'endDate'      => $l->getEndDate()->format('Y-m-d'),
+        ], $user->getLoans()->toArray());
+
+        $budgets = array_map(fn($b) => [
+            'name'        => $b->getName(),
+            'amount'      => $b->getAmount(),
+            'spentAmount' => $b->getSpentAmount(),
+            'category'    => $b->getCategory(),
+        ], $user->getBudgets()->toArray());
+
+        return [
+            'user'         => ['name' => $user->getName(), 'email' => $user->getEmail()],
+            'assets'       => $assets,
+            'contracts'    => $contracts,
+            'active_loans' => $loans,
+            'budgets'      => $budgets,
+        ];
+    }
+}
+
+How it works now
+// Symfony injects the base service via constructor
+$this->assistant  (base prompt + empty history)
+
+// Controller rebuilds it immutably per request using clone
+->withHistory($history)     adds session memory from browser
+->withContext($context)     swaps prompt to personalized version
+->ask($message)             sends to Groq, appends to internal memory
+
+// Updated history sent back to browser to persist across requests
+'history' => $assistant->getHistory()
+The key design here is that withPrompt(), withContext() and withHistory() all return a cloned instance — so the original service injected by Symfony stays clean and stateless, and each request gets its own isolated copy. Want me to update the Twig template to pass back and store the updated history correctly?

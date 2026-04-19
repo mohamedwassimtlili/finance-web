@@ -116,7 +116,7 @@ async def chat_with_groq(request: PromptRequest):
 @app.post("/insurance/chat", response_model=InsuranceChatResponse)
 async def insurance_chat(request: InsuranceChatRequest):
     """Stateful insurance assistant — delegates memory and LLM logic to the service layer."""
-    reply, history_length = await get_insurance_reply(request.user_id, request.message)
+    reply, history_length = await get_insurance_reply(request.user_id, request.message, request.context)
     return InsuranceChatResponse(
         reply=reply,
         user_id=request.user_id,

@@ -1,0 +1,110 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Payment #{{ transaction.id }}{% endblock %}
+{% block page_title %}Edit Payment #{{ transaction.id }}{% endblock %}
+
+{% block body %}
+{% for msg in app.flashes('error') %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h3 class="card-title mb-0"><i class="bi bi-pencil me-2"></i>Edit Payment #{{ transaction.id }}</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ path('payment_edit', {id: transaction.id}) }}" id="editPaymentForm" novalidate>
+
+                    <div class="mb-3">
+                        <label for="amount" class="form-label fw-semibold">Amount (TND) <span class="text-danger">*</span></label>
+                        <div class="input-group has-validation">
+                            <input type="number" step="0.001" min="0.001" max="9999999" name="amount" id="amount"
+                                   class="form-control form-control-lg" required value="{{ transaction.amount }}">
+                            <span class="input-group-text">TND</span>
+                            <div class="invalid-feedback">Please enter a valid positive amount.</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="type" class="form-label fw-semibold">Payment Type <span class="text-danger">*</span></label>
+                        <select name="type" id="type" class="form-select" required>
+                            <option value="payment"    {% if transaction.type == 'payment'    %}selected{% endif %}>Payment</option>
+                            <option value="transfer"   {% if transaction.type == 'transfer'   %}selected{% endif %}>Transfer</option>
+                            <option value="refund"     {% if transaction.type == 'refund'     %}selected{% endif %}>Refund</option>
+                            <option value="deposit"    {% if transaction.type == 'deposit'    %}selected{% endif %}>Deposit</option>
+                            <option value="withdrawal" {% if transaction.type == 'withdrawal' %}selected{% endif %}>Withdrawal</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a payment type.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="status" class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
+                        <select name="status" id="status" class="form-select" required>
+                            <option value="COMPLETED" {% if transaction.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                            <option value="PENDING"   {% if transaction.status == 'PENDING'   %}selected{% endif %}>Pending</option>
+                            <option value="FAILED"    {% if transaction.status == 'FAILED'    %}selected{% endif %}>Failed</option>
+                            <option value="CANCELLED" {% if transaction.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a status.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="currency" class="form-label fw-semibold">Currency</label>
+                        <select name="currency" id="currency" class="form-select">
+                            <option value="TND" {% if transaction.currency == 'TND' %}selected{% endif %}>TND – Tunisian Dinar</option>
+                            <option value="USD" {% if transaction.currency == 'USD' %}selected{% endif %}>USD – US Dollar</option>
+                            <option value="EUR" {% if transaction.currency == 'EUR' %}selected{% endif %}>EUR – Euro</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="description" class="form-label fw-semibold d-flex justify-content-between">
+                            <span>Description <small class="text-muted fw-normal">(optional)</small></span>
+                            <span class="text-muted small fw-normal" id="desc-counter">{{ transaction.description|length }} / 500</span>
+                        </label>
+                        <textarea name="description" id="description" class="form-control" rows="3" maxlength="500"
+                                  oninput="updateCounter('description','desc-counter',500)">{{ transaction.description|default('') }}</textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
+                            <i class="bi bi-check-circle me-1"></i> Save Changes
+                        </button>
+                        <a href="{{ path('payment_show', {id: transaction.id}) }}" class="btn btn-outline-secondary flex-fill">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const form = document.getElementById('editPaymentForm');
+    form.querySelectorAll('input, select, textarea').forEach(el => {
+        el.addEventListener('blur', () => validateField(el));
+        el.addEventListener('input', () => { if (el.classList.contains('is-invalid')) validateField(el); });
+    });
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        let valid = true;
+        form.querySelectorAll('input[required], select[required]').forEach(el => {
+            if (!validateField(el)) valid = false;
+        });
+        if (valid) form.submit();
+    });
+    function validateField(el) {
+        const ok = el.checkValidity();
+        el.classList.toggle('is-valid',   ok);
+        el.classList.toggle('is-invalid', !ok);
+        return ok;
+    }
+})();
+function updateCounter(inputId, counterId, max) {
+    const len = document.getElementById(inputId).value.length;
+    const el  = document.getElementById(counterId);
+    el.textContent = len + ' / ' + max;
+    el.classList.toggle('text-danger', len >= max * 0.9);
+}
+</script>
+{% endblock %}
