@@ -16,6 +16,35 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class SecurityController extends AbstractController
 {
+    private string $hcaptchaSiteKey;
+    private string $hcaptchaSecretKey;
+
+    public function __construct(string $hcaptchaSiteKey, string $hcaptchaSecretKey)
+    {
+        $this->hcaptchaSiteKey   = $hcaptchaSiteKey;
+        $this->hcaptchaSecretKey = $hcaptchaSecretKey;
+    }
+
+    // ── Verify hCaptcha token ─────────────────────────────────────────────────
+    private function verifyHcaptcha(string $token): bool
+    {
+        $response = file_get_contents(
+            'https://hcaptcha.com/siteverify',
+            false,
+            stream_context_create([
+                'http' => [
+                    'method'  => 'POST',
+                    'header'  => 'Content-Type: application/x-www-form-urlencoded',
+                    'content' => http_build_query([
+                        'secret'   => $this->hcaptchaSecretKey,
+                        'response' => $token,
+                    ]),
+                ],
+            ])
+        );
+        $data = json_decode($response, true);
+        return $data['success'] ?? false;
+    }
     #[Route(path: '/login', name: 'app_login')]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
@@ -38,34 +67,89 @@ class SecurityController extends AbstractController
         throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
     }
 
-    #[Route('/signup', name: 'app_signup', methods: ['GET', 'POST'])]
-    public function signup(Request $request, UserPasswordHasherInterface $userPasswordHasher, EntityManagerInterface $entityManager): Response
-    {
-        if ($this->getUser()) {
-            return $this->redirectToRoute('app_home');
-        }
+   #[Route('/signup', name: 'app_signup', methods: ['GET', 'POST'])]
+public function signup(Request $request, UserPasswordHasherInterface $userPasswordHasher, EntityManagerInterface $entityManager, MailerInterface $mailer, UserRepository $userRepository): Response
+{
 
-        if ($request->isMethod('POST')) {
+    if ($this->getUser()) {
+        return $this->redirectToRoute('app_home');
+    }
+
+    // Initialize variables so they're always defined
+    $error      = null;
+    $last_name  = '';
+    $last_email = '';
+    $last_phone = '';
+
+    if ($request->isMethod('POST')) {
+            // ── Verify hCaptcha ───────────────────────────────────────────────
+    $hcaptchaToken = $request->request->get('h-captcha-response', '');
+    if (empty($hcaptchaToken) || !$this->verifyHcaptcha($hcaptchaToken)) {
+        $this->addFlash('danger', 'Please complete the hCaptcha verification.');
+        return $this->render('security/signup.html.twig', [
+            'last_name'      => $request->request->get('name', ''),
+            'last_email'     => $request->request->get('email', ''),
+            'last_phone'     => $request->request->get('phone', ''),
+            'recaptcha_key'  => $this->hcaptchaSiteKey,
+            'error'          => null,
+        ]);}
+        $last_name  = $request->request->get('name', '');
+        $last_email = $request->request->get('email', '');
+        $last_phone = $request->request->get('phone', '');
+        $password   = $request->request->get('password', '');
+
+        if (!filter_var($last_email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Please enter a valid email address.';
+        } elseif ($userRepository->findOneBy(['email' => $last_email])) {
+            $error = 'An account with this email already exists.';
+        } elseif (strlen($password) < 8) {
+            $error = 'Password must be at least 8 characters.';
+        } else {
+            // All checks passed — create the user
             $user = new User();
-            $user->setName($request->request->get('name'));
-            $user->setEmail($request->request->get('email'));
-            $user->setPhone($request->request->get('phone'));
+            $user->setName($last_name);
+            $user->setEmail($last_email);
+            $user->setPhone($last_phone ?: null);
+            $user->setPassword($userPasswordHasher->hashPassword($user, $password));
 
-            $user->setPassword(
-                $userPasswordHasher->hashPassword(
-                    $user,
-                    $request->request->get('password')
-                )
-            );
+            $code = (string) random_int(100000, 999999);
+            $user->setVerificationCode($code);
 
             $entityManager->persist($user);
             $entityManager->flush();
 
-            return $this->redirectToRoute('app_login');
-        }
+            // Send verification email
+            $emailMsg = (new Email())
+                ->from('yasmine912003@gmail.com')
+                ->to($user->getEmail())
+                ->subject('Verify your email — FinanceApp')
+                ->html(
+                    '<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:24px;border:1px solid #e0e0e0;border-radius:8px">'
+                    . '<h2 style="color:#3b82f6">Verify your email</h2>'
+                    . '<p>Hello <strong>' . htmlspecialchars($user->getName()) . '</strong>,</p>'
+                    . '<p>Enter this code to activate your account:</p>'
+                    . '<div style="font-size:2.5rem;font-weight:bold;letter-spacing:12px;text-align:center;padding:20px;background:#f0f9ff;border-radius:6px;color:#1d4ed8">' . $code . '</div>'
+                    . '<p style="margin-top:16px;color:#6b7280;font-size:0.9rem">If you did not sign up, ignore this email.</p>'
+                    . '</div>'
+                );
 
-        return $this->render('security/signup.html.twig');
+            $mailer->send($emailMsg);
+
+            $request->getSession()->set('pending_verification_user_id', $user->getId());
+
+            return $this->redirectToRoute('app_verify_email');
+        }
     }
+
+    // Renders for both GET and failed POST — variables are always defined
+    return $this->render('security/signup.html.twig', [
+        'error'      => $error,
+        'last_name'  => $last_name,
+        'last_email' => $last_email,
+        'last_phone' => $last_phone,
+        'recaptcha_key' => $this->hcaptchaSiteKey,
+    ]);
+}
 
     // ─── FORGOT PASSWORD ──────────────────────────────────────────────────────
 
@@ -145,6 +229,66 @@ class SecurityController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        return $this->render('security/reset_password.html.twig');
+        return $this->render('security/reset_password.html.twig');}
+       #[Route('/verify-email', name: 'app_verify_email', methods: ['GET', 'POST'])]
+       public function verifyEmail(
+        Request $request,
+        UserRepository $userRepository,
+        EntityManagerInterface $em,
+        MailerInterface $mailer
+    ): Response {
+        $userId = $request->getSession()->get('pending_verification_user_id');
+
+        if (!$userId) {
+            return $this->redirectToRoute('app_signup');
+        }
+
+        $user  = $userRepository->find($userId);
+        $error = null;
+
+        if ($request->isMethod('POST')) {
+            
+
+            // ── Resend button ──
+            if ($request->request->has('resend')) {
+                $newCode = (string) random_int(100000, 999999);
+                $user->setVerificationCode($newCode);
+                $em->flush();
+
+                $mailer->send((new Email())
+                    ->from('yasmine912003@gmail.com')
+                    ->to($user->getEmail())
+                    ->subject('New verification code — FinanceApp')
+                    ->html(
+                        '<p>Your new verification code: <strong style="font-size:2rem;letter-spacing:8px">'
+                        . $newCode .
+                        '</strong></p>'
+                    )
+                );
+
+                $this->addFlash('info', 'A new code was sent to ' . $user->getEmail());
+                return $this->redirectToRoute('app_verify_email');
+            }
+
+            // ── Verify button ──
+            $code = trim($request->request->get('code'));
+
+            if ($code === $user->getVerificationCode()) {
+                $user->setIsVerified(true);
+                $user->setVerificationCode(null);
+                $em->flush();
+
+                $request->getSession()->remove('pending_verification_user_id');
+                $this->addFlash('success', 'Email verified! You can now sign in.');
+                return $this->redirectToRoute('app_login');
+            }
+
+            $error = 'Invalid code. Please try again.';
+        }
+
+        return $this->render('security/verify_email.html.twig', [
+            'email' => $user?->getEmail(),
+            'error' => $error,
+        ]);
     }
 }

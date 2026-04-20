@@ -1,0 +1,167 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Admin – Edit User #{{ user.id }}{% endblock %}
+{% block page_title %}Edit User{% endblock %}
+
+{% block body %}
+
+{% for label, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="alert alert-{{ label }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endfor %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+
+        {# ── Avatar + name header ─────────────────────────────────────────── #}
+        <div class="text-center mb-4">
+            <div class="mx-auto mb-2" style="
+                width:80px;height:80px;border-radius:50%;
+                background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+                display:flex;align-items:center;justify-content:center;
+                font-size:2rem;font-weight:700;color:#fff">
+                {{ user.name|first|upper }}
+            </div>
+            <h4 class="mb-0">{{ user.name }}</h4>
+            <small class="text-muted">{{ user.email }}</small>
+        </div>
+
+        <div class="card card-warning card-outline">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="bi bi-pencil-square me-2"></i>Edit User Details
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ path('admin_user_edit', {id: user.id}) }}" novalidate>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" name="name" value="{{ user.name }}"
+                                   class="form-control" required
+                                   pattern="[a-zA-Z\s]+" title="Letters and spaces only">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input type="email" name="email" value="{{ user.email }}"
+                                   class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Phone</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                            <input type="text" name="phone" value="{{ user.phone ?? '' }}"
+                                   class="form-control" maxlength="8"
+                                   pattern="[0-9]{8}" title="Exactly 8 digits"
+                                   oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-shield"></i></span>
+                            <select name="roleId" class="form-select">
+                                <option value="2" {{ user.roleId == 2 ? 'selected' : '' }}>User</option>
+                                <option value="1" {{ user.roleId == 1 ? 'selected' : '' }}>Admin</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">New Password
+                            <small class="text-muted fw-normal">(leave blank to keep current)</small>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input type="password" name="password" id="editPwd"
+                                   class="form-control" placeholder="Min 6 chars (optional)" minlength="6">
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="togglePwd('editPwd', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-warning flex-grow-1">
+                            <i class="bi bi-check-circle me-2"></i>Save Changes
+                        </button>
+                        <a href="{{ path('admin_user_index') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {# ── Account meta info ────────────────────────────────────────────── #}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-info-circle me-2"></i>Account Info</h3>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Created</span>
+                        <strong>{{ user.createdAt ? user.createdAt|date('d/m/Y H:i') : '—' }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Last Login</span>
+                        <strong>{{ user.lastLogin ? user.lastLogin|date('d/m/Y H:i') : '—' }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Email Verified</span>
+                        {% if user.isVerified %}
+                            <span class="badge text-bg-success">Yes</span>
+                        {% else %}
+                            <span class="badge text-bg-warning">Pending</span>
+                        {% endif %}
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Account Status</span>
+                        {% if user.isActive %}
+                            <span class="badge text-bg-success">Active</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Disabled</span>
+                        {% endif %}
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Google Account</span>
+                        {% if user.googleAccount %}
+                            <span class="badge text-bg-info">Yes</span>
+                        {% else %}
+                            <span class="text-muted">No</span>
+                        {% endif %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function togglePwd(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const isText = input.type === 'text';
+    input.type = isText ? 'password' : 'text';
+    btn.querySelector('i').className = isText ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+</script>
+{% endblock %}

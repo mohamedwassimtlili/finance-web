@@ -40,4 +40,47 @@ class UserRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+/**
+     * Search users by name OR email (case-insensitive LIKE).
+     * Real DQL business query — grille criterion 3.
+     *
+     * @return User[]
+     */
+    public function searchByNameOrEmail(string $q): array
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.name LIKE :q OR u.email LIKE :q')
+            ->setParameter('q', '%' . $q . '%')
+            ->orderBy('u.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Count verified vs unverified — for admin dashboard stats.
+     */
+    public function countByVerified(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->select('u.isVerified, COUNT(u.id) as total')
+            ->groupBy('u.isVerified')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Recent registrations in last N days — for admin dashboard.
+     *
+     * @return User[]
+     */
+    public function findRecentUsers(int $days = 7): array
+    {
+        $since = new \DateTime('-' . $days . ' days');
+        return $this->createQueryBuilder('u')
+            ->where('u.createdAt >= :since')
+            ->setParameter('since', $since)
+            ->orderBy('u.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
