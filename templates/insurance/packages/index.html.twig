@@ -72,11 +72,26 @@
                     </li>
                 </ul>
             </div>
-            <div class="card-footer bg-transparent">
+            <div class="card-footer bg-transparent d-flex flex-column gap-2">
                 <a href="{{ path('insurance_request_new') }}?package={{ package.id }}"
                    class="btn btn-primary w-100">
                     <i class="bi bi-file-earmark-plus me-1"></i>Request This Package
                 </a>
+                {% if is_granted('ROLE_ADMIN') %}
+                <div class="d-flex gap-2">
+                    <a href="{{ path('admin_insurance_package_edit', {id: package.id}) }}"
+                       class="btn btn-outline-warning btn-sm flex-fill">
+                        <i class="bi bi-pencil me-1"></i>Edit
+                    </a>
+                    <form method="post" action="{{ path('admin_insurance_package_delete', {id: package.id}) }}"
+                          class="flex-fill" onsubmit="return confirm('Delete package {{ package.name }}?')">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete-pkg-' ~ package.id) }}">
+                        <button class="btn btn-outline-danger btn-sm w-100">
+                            <i class="bi bi-trash me-1"></i>Delete
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
