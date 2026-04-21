@@ -51,24 +51,37 @@
                     <td>{{ req.calculatedPremium }} TND</td>
                     <td><span class="badge text-bg-{{ statusClass }}">{{ req.status }}</span></td>
                     <td>{{ req.createdAt ? req.createdAt|date('Y-m-d') : '—' }}</td>
-                    <td>
+                    <td class="text-nowrap">
+                        {# ── Approve / Reject: PENDING only ── #}
                         {% if req.status == 'PENDING' %}
                         <form method="post" action="{{ path('admin_insurance_request_approve', {id: req.id}) }}" class="d-inline">
                             <input type="hidden" name="_token" value="{{ csrf_token('approve-' ~ req.id) }}">
-                            <button class="btn btn-sm btn-success" title="Approve">
-                                <i class="bi bi-check-circle"></i> Approve
+                            <button class="btn btn-sm btn-success me-1" title="Approve">
+                                <i class="bi bi-check-circle"></i>
                             </button>
                         </form>
                         <form method="post" action="{{ path('admin_insurance_request_reject', {id: req.id}) }}" class="d-inline"
-                              onsubmit="return confirm('Reject this request?')">
+                              onsubmit="return confirm('Reject request #{{ req.id }}?')">
                             <input type="hidden" name="_token" value="{{ csrf_token('reject-' ~ req.id) }}">
-                            <button class="btn btn-sm btn-danger" title="Reject">
-                                <i class="bi bi-x-circle"></i> Reject
+                            <button class="btn btn-sm btn-warning me-1" title="Reject">
+                                <i class="bi bi-x-circle"></i>
                             </button>
                         </form>
-                        {% else %}
-                            <span class="text-muted small">—</span>
                         {% endif %}
+
+                        {# ── Edit: always available for admin ── #}
+                        <a href="{{ path('admin_insurance_request_edit', {id: req.id}) }}"
+                           class="btn btn-sm btn-outline-primary me-1" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        {# ── Delete: always available for admin ── #}
+                        <form method="post" action="{{ path('admin_insurance_request_delete', {id: req.id}) }}" class="d-inline"
+                              onsubmit="return confirm('Permanently delete request #{{ req.id }}?')">
+                            <button class="btn btn-sm btn-outline-danger" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
                     </td>
                 </tr>
             {% else %}
