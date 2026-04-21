@@ -1,70 +1,93 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}User{% endblock %}
+{% block title %}User — {{ user.name }}{% endblock %}
+{% block page_title %}User Detail{% endblock %}
 
 {% block body %}
-    <h1>User</h1>
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="card card-primary card-outline">
+            <div class="card-body box-profile">
 
-    <table class="table">
-        <tbody>
-            <tr>
-                <th>Id</th>
-                <td>{{ user.id }}</td>
-            </tr>
-            <tr>
-                <th>Name</th>
-                <td>{{ user.name }}</td>
-            </tr>
-            <tr>
-                <th>Email</th>
-                <td>{{ user.email }}</td>
-            </tr>
-            <tr>
-                <th>PasswordHash</th>
-                <td>{{ user.passwordHash }}</td>
-            </tr>
-            <tr>
-                <th>RoleId</th>
-                <td>{{ user.roleId }}</td>
-            </tr>
-            <tr>
-                <th>CreatedAt</th>
-                <td>{{ user.createdAt ? user.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>UpdatedAt</th>
-                <td>{{ user.updatedAt ? user.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>IsVerified</th>
-                <td>{{ user.isVerified ? 'Yes' : 'No' }}</td>
-            </tr>
-            <tr>
-                <th>Phone</th>
-                <td>{{ user.phone }}</td>
-            </tr>
-            <tr>
-                <th>VerificationCode</th>
-                <td>{{ user.verificationCode }}</td>
-            </tr>
-            <tr>
-                <th>GoogleAccount</th>
-                <td>{{ user.googleAccount ? 'Yes' : 'No' }}</td>
-            </tr>
-            <tr>
-                <th>LastLogin</th>
-                <td>{{ user.lastLogin ? user.lastLogin|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-            <tr>
-                <th>FaceRegistered</th>
-                <td>{{ user.faceRegistered ? 'Yes' : 'No' }}</td>
-            </tr>
-        </tbody>
-    </table>
+                <div class="text-center mb-3">
+                    <div class="d-inline-flex align-items-center justify-content-center
+                          bg-primary text-white rounded-circle"
+                         style="width:90px;height:90px;font-size:2.2rem;font-weight:700">
+                        {{ user.name|first|upper }}
+                    </div>
+                    <h3 class="profile-username mt-2 mb-0">{{ user.name }}</h3>
+                    <p class="text-muted">
+                        {% if user.roleId == 1 %}
+                            <span class="badge text-bg-danger">Administrator</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">User</span>
+                        {% endif %}
+                    </p>
+                </div>
 
-    <a href="{{ path('app_user_index') }}">back to list</a>
+                <ul class="list-group list-group-unbordered mb-3">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <b><i class="bi bi-envelope me-2"></i>Email</b>
+                        <span>{{ user.email }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <b><i class="bi bi-telephone me-2"></i>Phone</b>
+                        <span>{{ user.phone ?? '—' }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <b><i class="bi bi-patch-check me-2"></i>Email Verified</b>
+                        <span>
+                            {% if user.isVerified %}
+                                <span class="badge text-bg-success">Yes</span>
+                            {% else %}
+                                <span class="badge text-bg-warning">No</span>
+                            {% endif %}
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <b><i class="bi bi-person-check me-2"></i>Account Status</b>
+                        <span>
+                            {% if user.isActive %}
+                                <span class="badge text-bg-primary">Active</span>
+                            {% else %}
+                                <span class="badge text-bg-danger">Disabled</span>
+                            {% endif %}
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <b><i class="bi bi-google me-2"></i>Google Account</b>
+                        <span>{{ user.googleAccount ? 'Yes' : 'No' }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <b><i class="bi bi-clock-history me-2"></i>Last Login</b>
+                        <span>{{ user.lastLogin ? user.lastLogin|date('d/m/Y H:i') : '—' }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <b><i class="bi bi-calendar me-2"></i>Member Since</b>
+                        <span>{{ user.createdAt ? user.createdAt|date('d/m/Y') : '—' }}</span>
+                    </li>
+                </ul>
 
-    <a href="{{ path('app_user_edit', {'id': user.id}) }}">edit</a>
+                <div class="d-flex gap-2">
+                    <a href="{{ path('app_user_index') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Back
+                    </a>
+                    <a href="{{ path('app_user_edit', {'id': user.id}) }}" class="btn btn-warning">
+                        <i class="bi bi-pencil me-1"></i> Edit
+                    </a>
+                    <form method="post" action="{{ path('app_user_toggle_active', {'id': user.id}) }}">
+                        <input type="hidden" name="_token"
+                               value="{{ csrf_token('toggle-active' ~ user.id) }}">
+                        <button class="btn {{ user.isActive ? 'btn-secondary' : 'btn-success' }}">
+                            <i class="bi {{ user.isActive ? 'bi-person-dash' : 'bi-person-check' }} me-1"></i>
+                            {{ user.isActive ? 'Deactivate' : 'Activate' }}
+                        </button>
+                    </form>
+                    {{ include('user/_delete_form.html.twig') }}
+                </div>
 
-    {{ include('user/_delete_form.html.twig') }}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

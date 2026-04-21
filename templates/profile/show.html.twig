@@ -1,0 +1,397 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block body %}
+
+{# ── Flash messages ─────────────────────────────────────────────────────────── #}
+{% for label, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+            <i class="bi bi-{{ label == 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill' }} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endfor %}
+
+<div class="row g-4">
+
+    {# ═══════════════════════════════════════════════════════════════════════════
+       LEFT COLUMN — Identity Card
+    ═══════════════════════════════════════════════════════════════════════════ #}
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow-sm border-0 h-100">
+
+            {# Gradient header banner #}
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+                        height: 90px; border-radius: .375rem .375rem 0 0;"></div>
+
+            <div class="card-body text-center pt-0">
+
+                {# ── Avatar — shifted up to overlap banner ── #}
+                <div class="profile-avatar-wrapper mx-auto mb-3"
+                     style="width:110px; height:110px; position:relative; margin-top:-55px;">
+                    {# Fallback initials — shown while image loads #}
+                    <div id="avatarFallback"
+                         style="width:110px; height:110px; border-radius:50%;
+                                background: linear-gradient(135deg,#3b82f6 0%,#8b5cf6 100%);
+                                display:flex; align-items:center; justify-content:center;
+                                font-size:2.6rem; font-weight:700; color:#fff;
+                                border: 4px solid #fff;
+                                box-shadow: 0 4px 20px rgba(59,130,246,.4);">
+                        {{ user.name|split(' ')|map(p => p|first|upper)|join('')|slice(0,2) }}
+                    </div>
+                    {# DiceBear pixel-art avatar — loaded via JS #}
+                    <img id="avatarImg" src="" alt="avatar"
+                         style="display:none; width:110px; height:110px; border-radius:50%;
+                                object-fit:cover; border:4px solid #fff;
+                                box-shadow:0 4px 20px rgba(59,130,246,.4);">
+                    {# Loading spinner #}
+                    <div id="avatarSpinner"
+                         style="position:absolute; inset:0; display:flex; align-items:center;
+                                justify-content:center; background:rgba(255,255,255,.55);
+                                border-radius:50%;">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    </div>
+                </div>
+
+                <h4 class="mb-0 fw-bold">{{ user.name }}</h4>
+                <p class="text-muted mb-3" style="font-size:.9rem">{{ user.email }}</p>
+
+                {# Badges #}
+                <div class="d-flex gap-2 justify-content-center flex-wrap mb-4">
+                    {% if user.roleId == 1 %}
+                        <span class="badge rounded-pill text-bg-danger px-3 py-2">
+                            <i class="bi bi-shield-fill me-1"></i>Admin
+                        </span>
+                    {% else %}
+                        <span class="badge rounded-pill text-bg-secondary px-3 py-2">
+                            <i class="bi bi-person-fill me-1"></i>User
+                        </span>
+                    {% endif %}
+
+                    {% if user.isVerified %}
+                        <span class="badge rounded-pill text-bg-success px-3 py-2">
+                            <i class="bi bi-patch-check-fill me-1"></i>Verified
+                        </span>
+                    {% else %}
+                        <span class="badge rounded-pill text-bg-warning text-dark px-3 py-2">
+                            <i class="bi bi-clock-fill me-1"></i>Pending
+                        </span>
+                    {% endif %}
+
+                    {% if user.googleAccount %}
+                        <span class="badge rounded-pill text-bg-info px-3 py-2">
+                            <i class="bi bi-google me-1"></i>Google
+                        </span>
+                    {% endif %}
+
+                    {% if user.faceRegistered %}
+                        <span class="badge rounded-pill text-bg-primary px-3 py-2">
+                            <i class="bi bi-camera-fill me-1"></i>Face ID
+                        </span>
+                    {% endif %}
+                </div>
+
+                {# Info list #}
+                <ul class="list-group list-group-flush text-start rounded-3 overflow-hidden border">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3">
+                        <span class="text-muted small"><i class="bi bi-telephone me-2 text-primary"></i>Phone</span>
+                        <strong class="small">{{ user.phone ?? '—' }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3">
+                        <span class="text-muted small"><i class="bi bi-calendar3 me-2 text-primary"></i>Member since</span>
+                        <strong class="small">{{ user.createdAt ? user.createdAt|date('d M Y') : '—' }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3">
+                        <span class="text-muted small"><i class="bi bi-clock-history me-2 text-primary"></i>Last login</span>
+                        <strong class="small">{{ user.lastLogin ? user.lastLogin|date('d/m/Y H:i') : '—' }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-3">
+                        <span class="text-muted small"><i class="bi bi-toggle-on me-2 text-primary"></i>Status</span>
+                        {% if user.isActive %}
+                            <span class="badge text-bg-success rounded-pill">Active</span>
+                        {% else %}
+                            <span class="badge text-bg-danger rounded-pill">Disabled</span>
+                        {% endif %}
+                    </li>
+                </ul>
+
+                <a href="{{ path('app_profile_edit') }}" class="btn btn-primary d-block mt-4 rounded-3">
+                    <i class="bi bi-pencil-square me-2"></i>Edit Profile
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+    {# ═══════════════════════════════════════════════════════════════════════════
+       RIGHT COLUMN — Change Password + Tips
+    ═══════════════════════════════════════════════════════════════════════════ #}
+    <div class="col-xl-8 col-lg-7 d-flex flex-column gap-4">
+
+        {# ── Change password card ─────────────────────────────────────────── #}
+        <div class="card shadow-sm border-0">
+            <div class="card-header border-bottom bg-transparent py-3">
+                <h5 class="card-title mb-0 fw-semibold">
+                    <i class="bi bi-lock-fill text-warning me-2"></i>Change Password
+                </h5>
+            </div>
+            <div class="card-body pt-4">
+
+                {% if user.googleAccount and not user.passwordHash %}
+                    <div class="alert alert-info border-0 rounded-3 mb-0">
+                        <i class="bi bi-google me-2"></i>
+                        <strong>Google Account</strong> — your account uses Google Sign-In and has no local password.
+                    </div>
+                {% else %}
+                    <form method="post" action="{{ path('app_profile_change_password') }}" novalidate
+                          onsubmit="return validateChangePwd(this)">
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold small text-uppercase text-muted" for="currentPwd">
+                                    Current Password <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-lock text-muted"></i>
+                                    </span>
+                                    <input type="password" name="current_password" id="currentPwd"
+                                           class="form-control border-start-0 bg-light"
+                                           placeholder="Enter your current password" required>
+                                    <button class="btn btn-outline-secondary" type="button"
+                                            onclick="togglePwd('currentPwd', this)" tabindex="-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small text-uppercase text-muted" for="newPwd">
+                                    New Password <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-lock-fill text-muted"></i>
+                                    </span>
+                                    <input type="password" name="new_password" id="newPwd"
+                                           class="form-control border-start-0 bg-light"
+                                           placeholder="Min 6 characters"
+                                           required minlength="6"
+                                           oninput="checkPasswordStrength(this.value)">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                            onclick="togglePwd('newPwd', this)" tabindex="-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                {# Strength meter #}
+                                <div class="mt-2">
+                                    <div class="progress rounded-pill" style="height:5px">
+                                        <div id="strengthBar" class="progress-bar rounded-pill"
+                                             style="width:0%; transition:.3s"></div>
+                                    </div>
+                                    <small id="strengthLabel" class="text-muted fw-medium"></small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small text-uppercase text-muted" for="confirmPwd">
+                                    Confirm New Password <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-lock-fill text-muted"></i>
+                                    </span>
+                                    <input type="password" name="confirm_password" id="confirmPwd"
+                                           class="form-control border-start-0 bg-light"
+                                           placeholder="Repeat new password"
+                                           required minlength="6">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                            onclick="togglePwd('confirmPwd', this)" tabindex="-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <small id="matchMsg" class="fw-medium"></small>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning px-4">
+                                <i class="bi bi-shield-lock me-2"></i>Update Password
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary"
+                                    onclick="resetStrength()">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Clear
+                            </button>
+                        </div>
+
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ── Security tips ────────────────────────────────────────────────── #}
+        <div class="card shadow-sm border-0">
+            <div class="card-header border-bottom bg-transparent py-3">
+                <h5 class="card-title mb-0 fw-semibold">
+                    <i class="bi bi-shield-check text-success me-2"></i>Security Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="d-flex gap-3 align-items-start">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-2 flex-shrink-0">
+                                <i class="bi bi-key-fill text-primary"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small fw-semibold">Use strong passwords</p>
+                                <p class="mb-0 text-muted" style="font-size:.8rem">
+                                    Mix letters, numbers and symbols — at least 8 characters.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex gap-3 align-items-start">
+                            <div class="rounded-circle bg-warning bg-opacity-10 p-2 flex-shrink-0">
+                                <i class="bi bi-eye-slash-fill text-warning"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small fw-semibold">Keep it private</p>
+                                <p class="mb-0 text-muted" style="font-size:.8rem">
+                                    Never share your password with anyone.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex gap-3 align-items-start">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-2 flex-shrink-0">
+                                <i class="bi bi-arrow-repeat text-success"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small fw-semibold">Use unique passwords</p>
+                                <p class="mb-0 text-muted" style="font-size:.8rem">
+                                    Don't reuse passwords from other websites.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex gap-3 align-items-start">
+                            <div class="rounded-circle bg-info bg-opacity-10 p-2 flex-shrink-0">
+                                <i class="bi bi-safe2-fill text-info"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 small fw-semibold">Use a password manager</p>
+                                <p class="mb-0 text-muted" style="font-size:.8rem">
+                                    Tools like Bitwarden help generate and store secure passwords.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>{# end right col #}
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+// ── Load DiceBear avatar ──────────────────────────────────────────────────────
+(function () {
+    const name     = {{ user.name|json_encode|raw }};
+    const seed     = encodeURIComponent(name);
+    const url      = `https://api.dicebear.com/9.x/pixel-art/png?seed=${seed}&size=110`;
+    const img      = document.getElementById('avatarImg');
+    const fallback = document.getElementById('avatarFallback');
+    const spinner  = document.getElementById('avatarSpinner');
+
+    img.onload  = () => {
+        spinner.style.display  = 'none';
+        fallback.style.display = 'none';
+        img.style.display      = 'block';
+    };
+    img.onerror = () => { spinner.style.display = 'none'; };
+    img.src = url;
+})();
+
+// ── Toggle password visibility ────────────────────────────────────────────────
+function togglePwd(inputId, btn) {
+    const input  = document.getElementById(inputId);
+    const isText = input.type === 'text';
+    input.type   = isText ? 'password' : 'text';
+    btn.querySelector('i').className = isText ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+
+// ── Password strength meter ───────────────────────────────────────────────────
+function checkPasswordStrength(pwd) {
+    const bar   = document.getElementById('strengthBar');
+    const label = document.getElementById('strengthLabel');
+    let score   = 0;
+    if (pwd.length >= 6)           score++;
+    if (pwd.length >= 10)          score++;
+    if (/[A-Z]/.test(pwd))         score++;
+    if (/[0-9]/.test(pwd))         score++;
+    if (/[^A-Za-z0-9]/.test(pwd))  score++;
+
+    const levels = [
+        { pct: '20%', cls: 'bg-danger',  text: 'Very weak',  color: '#dc3545' },
+        { pct: '40%', cls: 'bg-danger',  text: 'Weak',       color: '#dc3545' },
+        { pct: '60%', cls: 'bg-warning', text: 'Fair',       color: '#ffc107' },
+        { pct: '80%', cls: 'bg-info',    text: 'Good',       color: '#0dcaf0' },
+        { pct: '100%',cls: 'bg-success', text: 'Strong 💪',  color: '#198754' },
+    ];
+    const l = levels[Math.max(0, score - 1)] || levels[0];
+    bar.style.width    = pwd.length ? l.pct : '0%';
+    bar.className      = `progress-bar rounded-pill ${l.cls}`;
+    label.textContent  = pwd.length ? l.text : '';
+    label.style.color  = l.color;
+}
+
+// ── Confirm password match ────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    const newPwd  = document.getElementById('newPwd');
+    const confirm = document.getElementById('confirmPwd');
+    const msg     = document.getElementById('matchMsg');
+    if (!newPwd) return; // Google accounts: form not rendered
+
+    [newPwd, confirm].forEach(el => el?.addEventListener('input', () => {
+        if (!confirm.value) { msg.textContent = ''; return; }
+        if (newPwd.value === confirm.value) {
+            msg.textContent = '✓ Passwords match';
+            msg.style.color = '#198754';
+        } else {
+            msg.textContent = '✗ Passwords do not match';
+            msg.style.color = '#dc3545';
+        }
+    }));
+});
+
+// ── Client-side validation before submit ─────────────────────────────────────
+function validateChangePwd(form) {
+    const newPwd  = form.querySelector('[name="new_password"]').value;
+    const confirm = form.querySelector('[name="confirm_password"]').value;
+    if (newPwd !== confirm) {
+        alert('New passwords do not match.');
+        return false;
+    }
+    return true;
+}
+
+function resetStrength() {
+    document.getElementById('strengthBar').style.width  = '0%';
+    document.getElementById('strengthLabel').textContent = '';
+    document.getElementById('matchMsg').textContent      = '';
+}
+</script>
+{% endblock %}

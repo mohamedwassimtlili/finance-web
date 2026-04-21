@@ -49,13 +49,12 @@
             <table class="table table-hover mb-0" id="payments-table">
                 <thead class="table-light">
                     <tr>
-                        <th class="sortable" onclick="sortTable('payments-table',0,this)"># <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
-                        <th class="sortable" onclick="sortTable('payments-table',1,this)">Amount (TND) <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
-                        <th class="sortable" onclick="sortTable('payments-table',2,this)">Type <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
-                        <th class="sortable" onclick="sortTable('payments-table',3,this)">Description <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
-                        <th class="sortable" onclick="sortTable('payments-table',4,this)">Status <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
-                        <th class="sortable" onclick="sortTable('payments-table',5,this)">Date <i class="bi bi-arrow-down-up sort-icon text-muted small"></i></th>
-                        <th class="text-end">Actions</th>
+                        <th>#</th>
+                        <th>Amount (TND)</th>
+                        <th>Note</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,21 +71,13 @@
                             {% elseif t.status == 'CANCELLED' %}<span class="badge bg-secondary">Cancelled</span>
                             {% else %}<span class="badge bg-info">{{ t.status }}</span>{% endif %}
                         </td>
-                        <td data-sort="{{ t.createdAt ? t.createdAt|date('Y-m-d H:i') : '' }}">
-                            {{ t.createdAt ? t.createdAt|date('d/m/Y H:i') : '—' }}
-                        </td>
-                        <td class="text-end">
-                            <a href="{{ path('payment_show', {id: t.id}) }}" class="btn btn-sm btn-outline-primary" title="View">
-                                <i class="bi bi-eye"></i>
+                        <td>{{ t.createdAt ? t.createdAt|date('d/m/Y H:i') : '—' }}</td>
+                        <td>
+                            <a href="{{ path('payment_pdf', {id: t.id}) }}"
+                               class="btn btn-sm btn-outline-primary"
+                               title="Download PDF receipt">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>Télécharger PDF
                             </a>
-                            <a href="{{ path('payment_edit', {id: t.id}) }}" class="btn btn-sm btn-outline-secondary" title="Edit">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <form method="post" action="{{ path('payment_delete', {id: t.id}) }}" class="d-inline"
-                                  onsubmit="return confirm('Delete this payment?')">
-                                <input type="hidden" name="_token" value="{{ csrf_token('delete_payment_' ~ t.id) }}">
-                                <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
-                            </form>
                         </td>
                     </tr>
                 {% endfor %}

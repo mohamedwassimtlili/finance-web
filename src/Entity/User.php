@@ -29,7 +29,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 100)]
     #[Groups(["user:read", "user:write"])]
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: 'Name is required.')]
+    #[Assert\Regex(pattern: '/^[a-zA-Z\s]+$/', message: 'Name can only contain letters and spaces.')]
     private ?string $name = null;
 
     #[ORM\Column(length: 150, unique: true)]
@@ -60,6 +61,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 30, nullable: true)]
     #[Groups(["user:read", "user:write"])]
+    #[Assert\Regex(pattern: '/^[0-9]{8}$/', message: 'Phone must be exactly 8 digits.')]
     private ?string $phone = null;
 
     #[ORM\Column(length: 10, nullable: true)]
@@ -77,6 +79,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::BOOLEAN, options: ["default" => 0])]
     #[Groups(["user:read", "user:write"])]
     private bool $faceRegistered = false;
+    #[ORM\Column(type: Types::BOOLEAN, options: ["default" => 1])]
+    private bool $isActive = true;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Budget::class)]
     private Collection $budgets;
@@ -286,6 +290,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setFaceRegistered(bool $faceRegistered): static
     {
         $this->faceRegistered = $faceRegistered;
+        return $this;
+    }
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
         return $this;
     }
 

@@ -8,9 +8,11 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+
 # FastAPI / Python env files
 /api/.env
 /api/.env.local
+
 ###> phpunit/phpunit ###
 /phpunit.xml
 /.phpunit.cache/
@@ -31,3 +33,6 @@ yarn-error.log
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
+
+# Protect secrets
+.env

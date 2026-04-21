@@ -1,0 +1,147 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Profile{% endblock %}
+{% block page_title %}Edit Profile{% endblock %}
+
+{% block body %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-9">
+
+        {# ── Back link ─────────────────────────────────────────────────────── #}
+        <a href="{{ path('app_profile') }}" class="btn btn-sm btn-outline-secondary mb-4">
+            <i class="bi bi-arrow-left me-1"></i>Back to Profile
+        </a>
+
+        {# ── Avatar + name header ──────────────────────────────────────────── #}
+        <div class="card shadow-sm border-0 mb-4">
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+                        height: 70px; border-radius: .375rem .375rem 0 0;"></div>
+            <div class="card-body text-center pt-0 pb-4">
+                <div class="mx-auto" style="width:80px; height:80px; position:relative; margin-top:-40px;">
+                    <div id="editAvatarFallback"
+                         style="width:80px; height:80px; border-radius:50%;
+                                background: linear-gradient(135deg,#3b82f6,#8b5cf6);
+                                display:flex; align-items:center; justify-content:center;
+                                font-size:1.9rem; font-weight:700; color:#fff;
+                                border: 3px solid #fff;
+                                box-shadow: 0 4px 14px rgba(59,130,246,.35);">
+                        {{ user.name|split(' ')|map(p => p|first|upper)|join('')|slice(0,2) }}
+                    </div>
+                    <img id="editAvatarImg" src="" alt="avatar"
+                         style="display:none; width:80px; height:80px; border-radius:50%;
+                                object-fit:cover; border:3px solid #fff;
+                                box-shadow:0 4px 14px rgba(59,130,246,.35);">
+                </div>
+                <h5 class="mb-0 fw-bold mt-2">{{ user.name }}</h5>
+                <small class="text-muted">{{ user.email }}</small>
+            </div>
+        </div>
+
+        {# ── Error alert ───────────────────────────────────────────────────── #}
+        {% if error %}
+            <div class="alert alert-danger alert-dismissible border-0 rounded-3">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+        {# ── Edit form card ────────────────────────────────────────────────── #}
+        <div class="card shadow-sm border-0">
+            <div class="card-header border-bottom bg-transparent py-3">
+                <h5 class="card-title mb-0 fw-semibold">
+                    <i class="bi bi-pencil-square text-primary me-2"></i>Update Your Information
+                </h5>
+            </div>
+            <div class="card-body pt-4">
+                <form method="post" action="{{ path('app_profile_edit') }}" novalidate>
+
+                    {# Full name #}
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small text-uppercase text-muted" for="nameInput">
+                            Full Name <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="bi bi-person text-muted"></i>
+                            </span>
+                            <input type="text" id="nameInput" name="name"
+                                   value="{{ user.name }}"
+                                   class="form-control border-start-0 bg-light"
+                                   placeholder="Your full name"
+                                   pattern="[a-zA-Z\s]+" title="Letters and spaces only"
+                                   required autocomplete="name">
+                        </div>
+                        <div class="form-text">Letters and spaces only.</div>
+                    </div>
+
+                    {# Phone #}
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small text-uppercase text-muted" for="phoneInput">
+                            Phone <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="bi bi-telephone text-muted"></i>
+                            </span>
+                            <input type="text" id="phoneInput" name="phone"
+                                   value="{{ user.phone ?? '' }}"
+                                   class="form-control border-start-0 bg-light"
+                                   placeholder="8-digit phone number"
+                                   pattern="[0-9]{8}" maxlength="8" inputmode="numeric"
+                                   title="Exactly 8 digits"
+                                   oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                        </div>
+                        <div class="form-text">Exactly 8 digits if provided.</div>
+                    </div>
+
+                    {# Email (read-only) #}
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small text-uppercase text-muted">Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="bi bi-envelope text-muted"></i>
+                            </span>
+                            <input type="email" value="{{ user.email }}"
+                                   class="form-control border-start-0" readonly
+                                   style="background:#f8f9fa; cursor:not-allowed; color:#6c757d">
+                            <span class="input-group-text bg-light">
+                                <i class="bi bi-lock text-muted"></i>
+                            </span>
+                        </div>
+                        <div class="form-text text-muted">Email address cannot be changed.</div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-save me-2"></i>Save Changes
+                        </button>
+                        <a href="{{ path('app_profile') }}" class="btn btn-outline-secondary px-4">
+                            Cancel
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+(function () {
+    const name     = {{ user.name|json_encode|raw }};
+    const seed     = encodeURIComponent(name);
+    const img      = document.getElementById('editAvatarImg');
+    const fallback = document.getElementById('editAvatarFallback');
+    img.onload  = () => { fallback.style.display = 'none'; img.style.display = 'block'; };
+    img.onerror = () => { /* keep initials */ };
+    img.src = `https://api.dicebear.com/9.x/pixel-art/png?seed=${seed}&size=80`;
+})();
+</script>
+{% endblock %}

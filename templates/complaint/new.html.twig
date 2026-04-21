@@ -11,18 +11,113 @@
             <div class="card-body">
                 <p class="text-muted mb-4">Describe your issue clearly. Our team will review and respond as soon as possible.</p>
                 <form method="post" action="{{ path('complaint_new') }}">
-                    <div class="mb-4">
+                    {% for message in app.flashes('danger') %}
+                        <div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ message }}</div>
+                    {% endfor %}
+                    <div class="mb-4 position-relative">
                         <label class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
-                        <textarea name="subject" class="form-control" rows="6" required
-                                  placeholder="Describe your complaint or issue in detail…"></textarea>
+                    <div class="mb-4 position-relative">
+                        <label class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
+                        <div style="position: relative;">
+                            <textarea id="complaint_subject" name="subject" class="form-control" rows="6" required
+                                      placeholder="Describe your complaint or issue in detail…"
+                                      style="background: transparent; position: relative; z-index: 2;"></textarea>
+                            
+                            <!-- Ghost Text Overlay -->
+                            <div id="ghost_text_container" class="form-control" 
+                                 style="position: absolute; top: 0; left: 0; bottom: 0; right: 0; z-index: 1; pointer-events: none; color: transparent; background-color: #fff; overflow: hidden; white-space: pre-wrap; word-wrap: break-word;">
+                                <span id="ghost_text_base"></span><span id="ghost_suggestion" class="text-secondary" style="opacity: 0.6;"></span>
+                            </div>
+
+                            <!-- Loading Spinner -->
+                            <div id="ai_loading" class="position-absolute d-none" style="bottom: 10px; right: 20px; z-index: 3;">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted"><i class="bi bi-magic"></i> AI Autocomplete is active. Press <kbd>Tab</kbd> to accept a suggestion.</small>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 align-items-center">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-send me-1"></i>Submit Complaint</button>
-                        <a href="{{ path('complaint_index') }}" class="btn btn-outline-secondary">Cancel</a>
+                        <a href="{{ path('complaint_index') }}" class="btn btn-outline-secondary ms-auto">Cancel</a>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('complaint_subject');
+    const ghostBase = document.getElementById('ghost_text_base');
+    const ghostSuggestion = document.getElementById('ghost_suggestion');
+    const ghostContainer = document.getElementById('ghost_text_container');
+    const loading = document.getElementById('ai_loading');
+    
+    let debounceTimer;
+
+    // Sync scroll so overlay matches textarea if it scrolls
+    textarea.addEventListener('scroll', function() {
+        ghostContainer.scrollTop = this.scrollTop;
+    });
+
+    textarea.addEventListener('input', function() {
+        const text = this.value;
+        ghostBase.textContent = text;
+        ghostSuggestion.textContent = ''; // clear previous suggestion
+        loading.classList.add('d-none');
+        
+        clearTimeout(debounceTimer);
+        
+        if (text.length < 5) return;
+
+        debounceTimer = setTimeout(() => {
+            loading.classList.remove('d-none');
+            
+            fetch('{{ path('complaint_suggest') }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({text: text})
+            })
+            .then(async res => {
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || 'Unknown error');
+                }
+                return data;
+            })
+            .then(data => {
+                // Ensure user hasn't typed more while waiting
+                if (data.suggestion && textarea.value === text) {
+                    let sugg = data.suggestion;
+                    // Auto-pad with space if missing
+                    if (!text.endsWith(' ') && !sugg.startsWith(' ') && !sugg.match(/^[.,?!]/)) {
+                        sugg = ' ' + sugg;
+                    }
+                    ghostSuggestion.textContent = sugg;
+                }
+            })
+            .catch(err => {
+                console.error("AI AutoComplete Error:", err);
+                // Do not pop up an annoying alert on every keystroke if the rate limit is hit, just show it once or fail silently. 
+                // We'll log it to console to not disrupt typing. 
+            })
+            .finally(() => {
+                loading.classList.add('d-none');
+            });
+        }, 400); // 400ms debounce
+    });
+
+    textarea.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab' && ghostSuggestion.textContent) {
+            e.preventDefault(); // Stop normal tabbing
+            this.value += ghostSuggestion.textContent;
+            ghostBase.textContent = this.value;
+            ghostSuggestion.textContent = '';
+        }
+    });
+});
+</script>
 {% endblock %}

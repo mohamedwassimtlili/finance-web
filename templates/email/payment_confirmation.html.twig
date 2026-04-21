@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Payment Confirmation</title>
+    <style>
+        body { margin:0; padding:0; background:#f4f6fb; font-family: Arial, Helvetica, sans-serif; color:#1a1a2e; }
+        .wrapper { max-width:600px; margin:40px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.10); }
+        .header  { background: linear-gradient(135deg,#1a56db 0%,#6c3fcf 100%); padding:36px 40px; text-align:center; }
+        .header h1 { margin:0; color:#fff; font-size:22px; font-weight:700; letter-spacing:.5px; }
+        .header p  { margin:6px 0 0; color:rgba(255,255,255,.80); font-size:13px; }
+        .badge { display:inline-block; margin-top:16px; padding:6px 20px; border-radius:50px; font-size:13px; font-weight:700; letter-spacing:.5px;
+                 background:{% if transaction.status == 'COMPLETED' %}#22c55e{% elseif transaction.status == 'PENDING' %}#f59e0b{% else %}#ef4444{% endif %};
+                 color:#fff; }
+        .body   { padding:36px 40px; }
+        .intro  { font-size:15px; color:#374151; margin-bottom:28px; line-height:1.6; }
+        .card   { background:#f8faff; border:1px solid #e5e7eb; border-radius:10px; padding:24px; margin-bottom:24px; }
+        .row    { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #e5e7eb; font-size:14px; }
+        .row:last-child { border-bottom:none; }
+        .label  { color:#6b7280; font-weight:600; }
+        .value  { color:#111827; font-weight:700; text-align:right; }
+        .amount-box { text-align:center; background:linear-gradient(135deg,#1a56db 0%,#6c3fcf 100%); border-radius:10px; padding:20px; margin-bottom:24px; }
+        .amount-box .amt { font-size:36px; font-weight:800; color:#fff; }
+        .amount-box .cur { font-size:14px; color:rgba(255,255,255,.75); margin-top:4px; }
+        .footer { background:#f9fafb; border-top:1px solid #e5e7eb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; }
+        .footer a { color:#1a56db; text-decoration:none; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="header">
+        <h1>💳 Payment {{ transaction.status == 'COMPLETED' ? 'Confirmed' : transaction.status|capitalize }}</h1>
+        <p>Transaction receipt from MyApp · Powered by Paymee</p>
+        <span class="badge">{{ transaction.status }}</span>
+    </div>
+    <div class="body">
+        <p class="intro">
+            Hello <strong>{{ transaction.user.name }}</strong>,<br>
+            {% if transaction.status == 'COMPLETED' %}
+                Your payment has been <strong>successfully processed</strong>. Here is your receipt.
+            {% else %}
+                Here is a summary of your recent payment transaction.
+            {% endif %}
+        </p>
+
+        <div class="amount-box">
+            <div class="amt">{{ transaction.amount|number_format(2, '.', ',') }}</div>
+            <div class="cur">{{ transaction.currency ?? 'TND' }}</div>
+        </div>
+
+        <div class="card">
+            <div class="row">
+                <span class="label">Transaction ID</span>
+                <span class="value">#{{ transaction.id }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Note / Reference</span>
+                <span class="value">{{ transaction.description|split('[paymee:')[0]|trim|default('—') }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Status</span>
+                <span class="value">{{ transaction.status }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Date &amp; Time</span>
+                <span class="value">{{ transaction.createdAt ? transaction.createdAt|date('d/m/Y H:i') : '—' }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Payment Method</span>
+                <span class="value">Paymee ({{ transaction.currency ?? 'TND' }})</span>
+            </div>
+            <div class="row">
+                <span class="label">Account Email</span>
+                <span class="value">{{ transaction.user.email }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        This email was sent automatically by <strong>MyApp</strong>.<br>
+        Please do not reply to this email. For support, visit <a href="#">support@myapp.tn</a>.
+    </div>
+</div>
+</body>
+</html>
