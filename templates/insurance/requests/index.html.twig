@@ -107,13 +107,11 @@
                     <td><span class="badge text-bg-{{ statusClass }}">{{ req.status }}</span></td>
                     <td>{{ req.createdAt ? req.createdAt|date('Y-m-d') : '—' }}</td>
                     <td class="text-nowrap">
-                        {# ── Edit: only for PENDING ── #}
-                        {% if req.status == 'PENDING' %}
+                        {# ── Edit ── #}
                         <a href="{{ path('insurance_request_edit', {id: req.id}) }}"
                            class="btn btn-sm btn-outline-warning me-1" title="Edit">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        {% endif %}
 
                         {# ── Cancel: only for PENDING ── #}
                         {% if req.status == 'PENDING' %}
@@ -126,20 +124,14 @@
                         </form>
                         {% endif %}
 
-                        {# ── Delete: only for CANCELLED or REJECTED ── #}
-                        {% if req.status in ['CANCELLED', 'REJECTED'] %}
+                        {# ── Delete ── #}
                         <form method="post" action="{{ path('insurance_request_delete', {id: req.id}) }}" class="d-inline"
-                              onsubmit="return confirm('Permanently delete this request?')">
+                              onsubmit="return confirm('Delete request #{{ req.id }}?')">
                             <input type="hidden" name="_token" value="{{ csrf_token('delete-req-' ~ req.id) }}">
                             <button class="btn btn-sm btn-outline-danger" title="Delete">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>
-                        {% endif %}
-
-                        {% if req.status in ['APPROVED'] %}
-                            <span class="text-muted small">—</span>
-                        {% endif %}
                     </td>
                 </tr>
             {% else %}

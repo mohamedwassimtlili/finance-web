@@ -269,11 +269,6 @@ class InsuranceController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        if (!in_array($contractRequest->getStatus(), ['CANCELLED', 'REJECTED'], true)) {
-            $this->addFlash('warning', 'Only cancelled or rejected requests can be deleted.');
-            return $this->redirectToRoute('insurance_requests');
-        }
-
         if ($this->isCsrfTokenValid('delete-req-' . $contractRequest->getId(), $request->request->get('_token'))) {
             $em->remove($contractRequest);
             $em->flush();
