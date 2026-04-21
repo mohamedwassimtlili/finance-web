@@ -1,0 +1,536 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Budget Management{% endblock %}
+
+{% block body %}
+
+<style>
+    .budget-page { background: #f4f6f9; min-height: 100vh; padding: 0.5rem 0; }
+    .page-header { background: #fff; border-radius: 12px; padding: 1rem 1.5rem; margin-bottom: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .stat-card { background: #fff; border-radius: 12px; padding: 1rem 1.25rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: none; height: 100%; }
+    .stat-card .stat-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #8a94a6; margin-bottom: 0.4rem; }
+    .stat-card .stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1; color: #1a1f36; }
+    .stat-card .stat-icon { font-size: 1.4rem; opacity: 0.35; }
+    .section-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: none; margin-bottom: 1rem; }
+    .section-card .section-header { padding: 1rem 1.5rem 0; border-bottom: 1px solid #f0f2f5; padding-bottom: 0.75rem; }
+    .section-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #8a94a6; margin: 0; }
+    .notif-bar { border-radius: 8px; border: none; padding: 0.7rem 1rem; margin-bottom: 0.5rem; font-size: 0.875rem; }
+    .notif-bar.danger  { background: #fff5f5; color: #c0392b; border-left: 4px solid #e74c3c !important; }
+    .notif-bar.warning { background: #fffbf0; color: #b7791f; border-left: 4px solid #f6ad55 !important; }
+    .notif-bar.info    { background: #f0f7ff; color: #2b6cb0; border-left: 4px solid #63b3ed !important; }
+    .budget-table thead th { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #8a94a6; background: #f8f9fc; border-bottom: 1px solid #eef0f4; padding: 0.85rem 1rem; }
+    .budget-table tbody td { padding: 0.9rem 1rem; vertical-align: middle; border-bottom: 1px solid #f4f6f9; color: #1a1f36; font-size: 0.9rem; }
+    .budget-table tbody tr:last-child td { border-bottom: none; }
+    .budget-table tbody tr:hover td { background: #fafbfd; }
+    .budget-name { font-weight: 600; color: #1a1f36; font-size: 0.92rem; }
+    .budget-meta { font-size: 0.75rem; color: #8a94a6; margin-top: 2px; }
+    .progress-wrap { min-width: 130px; }
+    .progress-thin { height: 5px; border-radius: 10px; background: #eef0f4; overflow: hidden; }
+    .progress-thin .bar { height: 100%; border-radius: 10px; transition: width 0.4s ease; }
+    .pct-label { font-size: 0.72rem; color: #8a94a6; margin-top: 3px; }
+    .status-pill { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .pill-on-track  { background: #e6faf3; color: #0d7a52; }
+    .pill-warning   { background: #fff8e6; color: #b45309; }
+    .pill-near      { background: #e8f0fe; color: #1a56db; }
+    .pill-overspent { background: #fef2f2; color: #b91c1c; }
+    .pill-none      { background: #f3f4f6; color: #6b7280; }
+    .action-btn { background: none; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.8rem; color: #64748b; transition: all 0.15s; cursor: pointer; text-decoration: none; display: inline-block; }
+    .action-btn:hover { background: #f1f5f9; border-color: #cbd5e1; color: #1a1f36; }
+    .action-btn.danger:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+    .health-score-num { font-size: 2.2rem; font-weight: 800; line-height: 1; }
+    .pattern-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f4f6f9; font-size: 0.875rem; }
+    .pattern-item:last-child { border-bottom: none; }
+    .pattern-label { color: #64748b; }
+    .pattern-value { font-weight: 600; color: #1a1f36; }
+    .footer-stat { text-align: center; padding: 0.75rem; }
+    .footer-stat .fs-label { font-size: 0.72rem; color: #8a94a6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .footer-stat .fs-value { font-size: 1.3rem; font-weight: 700; }
+    .amount-positive { color: #0d7a52; }
+    .amount-negative { color: #b91c1c; }
+</style>
+
+<div class="budget-page">
+
+
+  {# ── Page Header ──────────────────────────────────────── #}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h4 class="fw-bold mb-1" style="color:#1a1f36;">💰 Budget Management</h4>
+        <p class="mb-0" style="color:#8a94a6; font-size:0.85rem;">Track your spending and manage your financial goals</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+
+        {# ── Notification Bell ─────────────────────── #}
+        {% set notifList = [] %}
+        {% for budget in budgets %}
+            {% set amt = budget.amount|default(0) %}
+            {% if amt > 0 %}
+                {% set pct = (budget.spentAmount|default(0) / amt) * 100 %}
+                {% if pct > 100 %}
+                    {% set notifList = notifList|merge([{
+                        'type': 'danger',
+                        'icon': '🔴',
+                        'message': '"' ~ budget.name ~ '" is overspent by ' ~ (budget.spentAmount - amt)|number_format(2) ~ ' TND'
+                    }]) %}
+                {% elseif pct >= 90 %}
+                    {% set notifList = notifList|merge([{
+                        'type': 'warning',
+                        'icon': '🟠',
+                        'message': '"' ~ budget.name ~ '" is at ' ~ pct|round(1) ~ '% — almost at limit'
+                    }]) %}
+                {% elseif pct >= 75 %}
+                    {% set notifList = notifList|merge([{
+                        'type': 'info',
+                        'icon': '🟡',
+                        'message': '"' ~ budget.name ~ '" has used ' ~ pct|round(1) ~ '% of its budget'
+                    }]) %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        {% if notifList|length == 0 %}
+            {% set notifList = notifList|merge([{
+                'type': 'success',
+                'icon': '🟢',
+                'message': 'All budgets are on track!'
+            }]) %}
+        {% endif %}
+
+        <div class="position-relative" id="notifWrapper">
+            <button onclick="toggleNotif()" class="action-btn position-relative" style="font-size:1.2rem; padding: 0.3rem 0.6rem; border-radius:8px;">
+                🔔
+                {% set dangerCount = 0 %}
+                {% for n in notifList %}
+                    {% if n.type == 'danger' or n.type == 'warning' %}
+                        {% set dangerCount = dangerCount + 1 %}
+                    {% endif %}
+                {% endfor %}
+                {% if dangerCount > 0 %}
+                    <span style="
+                        position: absolute;
+                        top: -5px; right: -5px;
+                        background: #e74c3c;
+                        color: white;
+                        font-size: 0.6rem;
+                        font-weight: 700;
+                        width: 16px; height: 16px;
+                        border-radius: 50%;
+                        display: flex; align-items: center; justify-content: center;
+                        line-height: 1;
+                    ">{{ dangerCount }}</span>
+                {% endif %}
+            </button>
+
+            {# Dropdown #}
+            <div id="notifDropdown" style="
+                display: none;
+                position: absolute;
+                right: 0; top: calc(100% + 8px);
+                width: 320px;
+                background: #fff;
+                border-radius: 12px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+                z-index: 9999;
+                overflow: hidden;
+            ">
+                <div style="padding: 0.85rem 1rem; border-bottom: 1px solid #f0f2f5; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:#8a94a6;">Notifications</span>
+                    <span style="font-size:0.72rem; color:#8a94a6;">{{ notifList|length }} alert{{ notifList|length != 1 ? 's' : '' }}</span>
+                </div>
+                {% for notif in notifList %}
+                    <div style="
+                        padding: 0.85rem 1rem;
+                        border-bottom: 1px solid #f8f9fc;
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 0.6rem;
+                        {% if notif.type == 'danger' %}background: #fff8f8;
+                        {% elseif notif.type == 'warning' %}background: #fffdf5;
+                        {% elseif notif.type == 'info' %}background: #f8fbff;
+                        {% else %}background: #f6fef9;{% endif %}
+                    ">
+                        <span style="font-size:0.9rem; margin-top:1px;">{{ notif.icon }}</span>
+                        <span style="font-size:0.82rem; color:#1a1f36; line-height:1.4;">{{ notif.message }}</span>
+                    </div>
+                {% endfor %}
+                <div style="padding: 0.6rem 1rem; text-align:center;">
+                    <small style="color:#8a94a6; font-size:0.72rem;">Click anywhere to close</small>
+                </div>
+            </div>
+        </div>
+        {# ── End Bell ──────────────────────────────── #}
+
+        <a target="_blank" href="{{ path('finance_export_pdf') }}" class="btn btn-sm btn-danger px-3"><i class="bi bi-file-earmark-pdf"></i> Download PDF Report</a>
+        <a href="{{ path('finance_expenses') }}" class="action-btn">📋 Expenses</a>
+        <a href="{{ path('finance_bills') }}" class="action-btn">🧾 Bills</a>
+        <a href="{{ path('finance_budget_new') }}" class="btn btn-sm btn-dark px-3">+ New Budget</a>
+    </div>
+</div>
+
+    {# ── Compute totals ───────────────────────────────────── #}
+    {% set totalBudget = 0 %}
+    {% set totalSpent = 0 %}
+    {% set expenseCount = 0 %}
+    {% set totalExpAmt = 0 %}
+    {% set highestExp = 0 %}
+    {% set categoryTotals = {} %}
+    {% set scores = [] %}
+
+    {% for budget in budgets %}
+        {% set amt = budget.amount|default(0) %}
+        {% set spent = budget.spentAmount|default(0) %}
+        {% set totalBudget = totalBudget + amt %}
+        {% set totalSpent = totalSpent + spent %}
+        {% if amt > 0 %}
+            {% set pct = (spent / amt) * 100 %}
+            {% if pct <= 50 %}     {% set scores = scores|merge([100]) %}
+            {% elseif pct <= 75 %} {% set scores = scores|merge([80]) %}
+            {% elseif pct <= 90 %} {% set scores = scores|merge([60]) %}
+            {% elseif pct <= 100 %}{% set scores = scores|merge([40]) %}
+            {% else %}             {% set scores = scores|merge([10]) %}
+            {% endif %}
+        {% endif %}
+        {% for expense in budget.expenses %}
+            {% set ea = expense.amount|default(0) %}
+            {% set expenseCount = expenseCount + 1 %}
+            {% set totalExpAmt = totalExpAmt + ea %}
+            {% if ea > highestExp %}{% set highestExp = ea %}{% endif %}
+            {% set cat = expense.category ?: 'Uncategorized' %}
+            {% set categoryTotals = categoryTotals|merge({(cat): (categoryTotals[cat]|default(0) + ea)}) %}
+        {% endfor %}
+    {% endfor %}
+
+    {% set totalRemaining = totalBudget - totalSpent %}
+    {% set overallPct = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0 %}
+    {% set avgExp = expenseCount > 0 ? totalExpAmt / expenseCount : 0 %}
+    {% set topCats = categoryTotals|sort|reverse|slice(0, 3) %}
+    {% set healthScore = scores|length > 0 ? (scores|reduce((carry, v) => carry + v, 0) / scores|length)|round : 0 %}
+    {% if healthScore >= 80 %}{% set healthStatus = 'Excellent' %}{% set healthColor = '#0d7a52' %}{% set healthBg = '#e6faf3' %}
+    {% elseif healthScore >= 60 %}{% set healthStatus = 'Good' %}{% set healthColor = '#1a56db' %}{% set healthBg = '#e8f0fe' %}
+    {% elseif healthScore >= 40 %}{% set healthStatus = 'Fair' %}{% set healthColor = '#b45309' %}{% set healthBg = '#fff8e6' %}
+    {% else %}{% set healthStatus = 'Poor' %}{% set healthColor = '#b91c1c' %}{% set healthBg = '#fef2f2' %}{% endif %}
+
+    {# ── Stat Cards ───────────────────────────────────────── #}
+    <div class="row g-2 mb-3">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Total Budget</div>
+                        <div class="stat-value">{{ totalBudget|number_format(2) }}</div>
+                        <div style="font-size:0.75rem; color:#8a94a6;">TND allocated</div>
+                    </div>
+                    <div class="stat-icon">💰</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Total Spent</div>
+                        <div class="stat-value" style="color:#b91c1c;">{{ totalSpent|number_format(2) }}</div>
+                        <div style="font-size:0.75rem; color:#8a94a6;">TND spent</div>
+                    </div>
+                    <div class="stat-icon">📊</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Remaining</div>
+                        <div class="stat-value {{ totalRemaining < 0 ? 'amount-negative' : 'amount-positive' }}">
+                            {{ totalRemaining|number_format(2) }}
+                        </div>
+                        <div style="font-size:0.75rem; color:#8a94a6;">TND left</div>
+                    </div>
+                    <div class="stat-icon">📈</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Health Score</div>
+                        <div class="health-score-num" style="color:{{ healthColor }};">{{ healthScore }}<span style="font-size:1rem; color:#8a94a6;">/100</span></div>
+                        <span style="background:{{ healthBg }}; color:{{ healthColor }}; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:20px;">{{ healthStatus }}</span>
+                    </div>
+                    <div class="stat-icon">💚</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-2 mb-3">
+        <div class="col-12">
+            {# ── Spending Patterns ────────────────────────────────── #}
+            {% if expenseCount > 0 %}
+            <div class="section-card h-100 mb-0">
+        <div class="section-header">
+            <span class="section-title">📈 Spending Patterns</span>
+        </div>
+        <div class="card-body px-4 py-3">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="pattern-item">
+                        <span class="pattern-label">Average Expense</span>
+                        <span class="pattern-value">{{ avgExp|number_format(2) }} TND</span>
+                    </div>
+                    <div class="pattern-item">
+                        <span class="pattern-label">Highest Expense</span>
+                        <span class="pattern-value" style="color:#b91c1c;">{{ highestExp|number_format(2) }} TND</span>
+                    </div>
+                    <div class="pattern-item">
+                        <span class="pattern-label">Total Transactions</span>
+                        <span class="pattern-value">{{ expenseCount }}</span>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:#8a94a6; margin-bottom:0.6rem;">Top Categories</div>
+                    {% for cat, catAmt in topCats %}
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <div style="width:110px; font-size:0.82rem; color:#1a1f36; font-weight:500;">{{ cat }}</div>
+                            <div class="flex-grow-1">
+                                <div class="progress-thin">
+                                    <div class="bar" style="width:{{ totalExpAmt > 0 ? (catAmt / totalExpAmt * 100)|round : 0 }}%; background:#3b82f6;"></div>
+                                </div>
+                            </div>
+                            <div style="font-size:0.82rem; font-weight:600; color:#1a1f36; min-width:80px; text-align:right;">{{ catAmt|number_format(2) }} TND</div>
+                        </div>
+                    {% endfor %}
+                </div>
+                    </div>
+                </div>
+                <div class="row mt-3 border-top pt-3" style="border-color:#f0f2f5 !important;">
+                    <div class="col-md-6 text-center" style="height: 250px;">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div class="col-md-6 text-center" style="height: 250px;">
+                        <canvas id="dailyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {# ── Budgets Table ────────────────────────────────────── #}
+    <div class="section-card">
+        <div class="section-header d-flex justify-content-between align-items-center">
+            <span class="section-title">📋 All Budgets</span>
+            <span style="font-size:0.78rem; color:#8a94a6;">{{ budgets|length }} budget{{ budgets|length != 1 ? 's' : '' }}</span>
+        </div>
+
+        {% if budgets is empty %}
+            <div class="text-center py-5">
+                <div style="font-size:3rem;">📭</div>
+                <p style="color:#8a94a6; margin:0.5rem 0;">No budgets created yet</p>
+                <a href="{{ path('finance_budget_new') }}" class="btn btn-dark btn-sm mt-2">Create your first budget</a>
+            </div>
+        {% else %}
+        <div class="table-responsive">
+            <table class="table budget-table mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Budget</th>
+                        <th>Allocated</th>
+                        <th>Spent</th>
+                        <th>Remaining</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for budget in budgets %}
+                    {% set amt   = budget.amount|default(0) %}
+                    {% set spent = budget.spentAmount|default(0) %}
+                    {% set rem   = amt - spent %}
+                    {% set pct   = amt > 0 ? (spent / amt * 100) : 0 %}
+                    {% set status = budget.status %}
+                    {% if status == 'On Track' %}
+                        {% set barColor = '#10b981' %}{% set pillClass = 'pill-on-track' %}
+                    {% elseif status == 'Warning' %}
+                        {% set barColor = '#f6ad55' %}{% set pillClass = 'pill-warning' %}
+                    {% elseif status == 'Near Limit' %}
+                        {% set barColor = '#3b82f6' %}{% set pillClass = 'pill-near' %}
+                    {% elseif status == 'Overspent' %}
+                        {% set barColor = '#e74c3c' %}{% set pillClass = 'pill-overspent' %}
+                    {% else %}
+                        {% set barColor = '#cbd5e1' %}{% set pillClass = 'pill-none' %}
+                    {% endif %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="budget-name">{{ budget.name }}</div>
+                            {% if budget.category %}
+                                <div class="budget-meta">{{ budget.category }}</div>
+                            {% endif %}
+                            <div class="budget-meta">
+                                {{ budget.startDate ? budget.startDate|date('d M') : '' }}
+                                {% if budget.endDate %} → {{ budget.endDate|date('d M Y') }}{% endif %}
+                            </div>
+                        </td>
+                        <td><strong>{{ amt|number_format(2) }}</strong> <span style="color:#8a94a6;font-size:0.75rem;">TND</span></td>
+                        <td>{{ spent|number_format(2) }} <span style="color:#8a94a6;font-size:0.75rem;">TND</span></td>
+                        <td>
+                            <span class="{{ rem < 0 ? 'amount-negative' : 'amount-positive' }}" style="font-weight:600;">
+                                {{ rem|number_format(2) }} TND
+                            </span>
+                        </td>
+                        <td>
+                            <div class="progress-wrap">
+                                <div class="progress-thin">
+                                    <div class="bar" style="width:{{ pct > 100 ? 100 : pct }}%; background:{{ barColor }};"></div>
+                                </div>
+                                <div class="pct-label">{{ pct|round(1) }}% used</div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-pill {{ pillClass }}">{{ status }}</span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a href="{{ path('finance_budget_show', {'id': budget.id}) }}" class="action-btn" title="View">👁</a>
+                                <a href="{{ path('finance_budget_edit', {'id': budget.id}) }}" class="action-btn" title="Edit">✏️</a>
+                                <form action="{{ path('finance_budget_delete', {'id': budget.id}) }}"
+                                      method="post" class="d-inline"
+                                      onsubmit="return confirm('Delete this budget? All expenses and bills will also be deleted.')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_budget_' ~ budget.id) }}">
+                                    <button class="action-btn danger" title="Delete">🗑</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# ── Footer status counts ─────────────────────── #}
+        {% set onTrack = 0 %}{% set warn = 0 %}{% set near = 0 %}{% set over = 0 %}
+        {% for b in budgets %}
+            {% if b.status == 'On Track' %}{% set onTrack = onTrack + 1 %}
+            {% elseif b.status == 'Warning' %}{% set warn = warn + 1 %}
+            {% elseif b.status == 'Near Limit' %}{% set near = near + 1 %}
+            {% elseif b.status == 'Overspent' %}{% set over = over + 1 %}
+            {% endif %}
+        {% endfor %}
+
+        <div class="d-flex border-top" style="border-color:#f0f2f5 !important;">
+            <div class="footer-stat flex-fill border-end" style="border-color:#f0f2f5 !important;">
+                <div class="fs-label">On Track</div>
+                <div class="fs-value" style="color:#0d7a52;">{{ onTrack }}</div>
+            </div>
+            <div class="footer-stat flex-fill border-end" style="border-color:#f0f2f5 !important;">
+                <div class="fs-label">Warning</div>
+                <div class="fs-value" style="color:#b45309;">{{ warn }}</div>
+            </div>
+            <div class="footer-stat flex-fill border-end" style="border-color:#f0f2f5 !important;">
+                <div class="fs-label">Near Limit</div>
+                <div class="fs-value" style="color:#1a56db;">{{ near }}</div>
+            </div>
+            <div class="footer-stat flex-fill">
+                <div class="fs-label">Overspent</div>
+                <div class="fs-value" style="color:#b91c1c;">{{ over }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+</div>
+<script>
+function toggleNotif() {
+    const dropdown = document.getElementById('notifDropdown');
+    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+}
+
+// close when clicking outside
+document.addEventListener('click', function(e) {
+    const wrapper = document.getElementById('notifWrapper');
+    if (!wrapper.contains(e.target)) {
+        document.getElementById('notifDropdown').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryTotals = {{ categoryTotals|json_encode|raw }};
+    const dailyTotals = {{ dayTotals|default('{}')|json_encode|raw }};
+    
+    if (Object.keys(categoryTotals).length > 0) {
+        const ctxCat = document.getElementById('categoryChart')?.getContext('2d');
+        if (ctxCat) {
+            new Chart(ctxCat, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categoryTotals),
+                    datasets: [{
+                        data: Object.values(categoryTotals),
+                        backgroundColor: [
+                            '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316',
+                            '#eab308', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } },
+                        title: { display: true, text: 'Spending by Category', color: '#8a94a6', font: {size: 11} }
+                    }
+                }
+            });
+        }
+    }
+
+    if (Object.keys(dailyTotals).length > 0) {
+        const daysOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const orderedLabels = [];
+        const orderedData = [];
+        
+        daysOrder.forEach(day => {
+            if (dailyTotals[day] !== undefined) {
+                orderedLabels.push(day.substring(0, 3)); // Short day names
+                orderedData.push(dailyTotals[day]);
+            }
+        });
+
+        const ctxDay = document.getElementById('dailyChart')?.getContext('2d');
+        if (ctxDay) {
+            new Chart(ctxDay, {
+                type: 'bar',
+                data: {
+                    labels: orderedLabels,
+                    datasets: [{
+                        label: 'Total Spent',
+                        data: orderedData,
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Spending by Day', color: '#8a94a6', font: {size: 11} }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false }, ticks: {font: {size: 9}} },
+                        x: { grid: { display: false }, ticks: {font: {size: 9}} }
+                    }
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Your Opportunities{% endblock %}
+
+{% block body %}
+<div class="container-fluid px-4">
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="fw-semibold mb-0">✨ Your Personalized Opportunities</h4>
+                    <p class="text-muted small">Based on your profile</p>
+                </div>
+                <a href="{{ path('side_hustle_index') }}" class="btn btn-outline-secondary btn-sm">
+                    ← New Search
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for suggestion in suggestions %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+                                #{{ loop.index }}
+                            </span>
+                            <span class="badge {% if suggestion.data.difficulty == 'Easy' %}bg-success{% elseif suggestion.data.difficulty == 'Medium' %}bg-warning{% else %}bg-danger{% endif %} bg-opacity-10 text-dark px-3 py-2 rounded-pill">
+                                {{ suggestion.data.difficulty|default('Medium') }}
+                            </span>
+                        </div>
+                        
+                        <h5 class="fw-bold mb-2">{{ suggestion.title }}</h5>
+                        <p class="text-muted small mb-3">{{ suggestion.data.why_fits|default('This opportunity matches your profile') }}</p>
+                        
+                        <hr class="my-3">
+                        
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="bg-light rounded-3 p-2 text-center">
+                                    <div class="small text-muted">Earning</div>
+                                    <div class="fw-semibold text-success">{{ suggestion.data.earning_potential|default('Varies') }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light rounded-3 p-2 text-center">
+                                    <div class="small text-muted">Time/week</div>
+                                    <div class="fw-semibold">{{ suggestion.data.time_commitment|default('Flexible') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary flex-grow-1" onclick="listenSuggestion('{{ suggestion.id }}', `{{ suggestion.script|escape('js') }}`)">
+                                <i class="bi bi-headphones"></i> Listen
+                            </button>
+                            <form method="post" action="{{ path('side_hustle_start', {id: suggestion.id}) }}" class="flex-grow-1">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-rocket"></i> Start
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Professional Modal -->
+            <div class="modal fade" id="modal{{ suggestion.id }}" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header bg-white border-bottom">
+                            <div>
+                                <h5 class="modal-title fw-bold">{{ suggestion.title }}</h5>
+                                <p class="text-muted small mb-0">Complete step-by-step guide</p>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <!-- Stats Cards -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <div class="bg-light rounded-3 p-3 text-center">
+                                        <div class="text-muted small">💰 Monthly Earning</div>
+                                        <div class="fs-5 fw-bold text-success">{{ suggestion.data.earning_potential|default('$500-2000') }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="bg-light rounded-3 p-3 text-center">
+                                        <div class="text-muted small">⏱️ Time Investment</div>
+                                        <div class="fs-5 fw-bold">{{ suggestion.data.time_commitment|default('2-5 hours/week') }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="bg-light rounded-3 p-3 text-center">
+                                        <div class="text-muted small">📊 Difficulty</div>
+                                        <div class="fs-5 fw-bold">
+                                            <span class="badge {% if suggestion.data.difficulty == 'Easy' %}bg-success{% elseif suggestion.data.difficulty == 'Medium' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ suggestion.data.difficulty|default('Medium') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Why fits -->
+                            <div class="alert alert-primary bg-opacity-10 border-0">
+                                <i class="bi bi-star-fill text-warning me-2"></i>
+                                <strong>Why this fits you:</strong> {{ suggestion.data.why_fits|default('This opportunity matches your profile perfectly.') }}
+                            </div>
+                            
+                            <!-- Steps -->
+                            <h6 class="fw-bold mt-4 mb-3"><i class="bi bi-list-check me-2"></i> Step-by-Step Guide</h6>
+                            <div style="white-space: pre-line; line-height: 1.8;">
+                                {{ suggestion.script|nl2br }}
+                            </div>
+                            
+                            <!-- Tips -->
+                            <div class="bg-light rounded-3 p-3 mt-4">
+                                <i class="bi bi-lightbulb text-warning me-2"></i>
+                                <strong>Pro Tips:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Start small - consistency beats intensity</li>
+                                    <li>Save your first $100 for tools or courses</li>
+                                    <li>Join Facebook/Reddit communities for this industry</li>
+                                    <li>Ask for testimonials after every client</li>
+                                    <li>Track your time to calculate real hourly rate</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-success" onclick="markStarted({{ suggestion.id }})">
+                                <i class="bi bi-check-circle me-1"></i> Yes, I'm Ready to Start
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+// Wait for voices to load
+window.speechSynthesis.getVoices();
+
+function listenSuggestion(id, script) {
+    // Mark as listened
+    fetch('/finance/side-hustle/listen/' + id, { method: 'POST' });
+    
+    // Stop any playing audio
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
+    
+    const utterance = new SpeechSynthesisUtterance(script);
+    
+    // Force English voice
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    
+    // Try to find a clear English voice
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoice = voices.find(voice => voice.lang === 'en-US' || voice.lang === 'en-GB');
+    if (englishVoice) {
+        utterance.voice = englishVoice;
+    }
+    
+    window.speechSynthesis.speak(utterance);
+}
+
+function markStarted(id) {
+    fetch('/finance/side-hustle/start/' + id, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('🎉 Congratulations! You\'ve taken the first step toward earning extra income!\n\nCheck your dashboard for more resources.');
+            location.reload();
+        } else {
+            alert('Error occurred. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+</script>
+{% endblock %}

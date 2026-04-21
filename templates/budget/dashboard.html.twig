@@ -1,0 +1,422 @@
+{# templates/budget/dashboard.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Financial Dashboard - Personal Finance{% endblock %}
+
+{% block body %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12 d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="mb-0">📊 Financial Dashboard</h1>
+                <p class="text-muted mb-0">Welcome back! Here's your financial overview.</p>
+            </div>
+            <a href="{{ path('finance_export_csv') }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Export to CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Smart Notifications -->
+    {% if notifications|length > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">🔔 Smart Notifications</h5>
+                </div>
+                <div class="card-body">
+                    {% for notification in notifications %}
+                        <div class="alert alert-{{ notification.type }} alert-dismissible fade show" role="alert">
+                            {{ notification.icon }} {{ notification.message }}
+                            {% if notification.budget_id %}
+                                <a href="{{ path('finance_budget_show', {'id': notification.budget_id}) }}" class="alert-link">View Budget</a>
+                            {% endif %}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Financial Health Score Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card text-white bg-{{ healthStatus.class }} h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Financial Health Score</h5>
+                            <h1 class="display-4">{{ healthScore }}/100</h1>
+                            <p class="mb-0">{{ healthStatus.icon }} Status: {{ healthStatus.text }}</p>
+                        </div>
+                        <div class="display-1">
+                            {{ healthStatus.icon }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Summary Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Budget Summary</h5>
+                    <div class="row">
+                        <div class="col-6">
+                            <small>Total Budget</small>
+                            <h3>${{ budgetSummary.total_budget|number_format(2) }}</h3>
+                        </div>
+                        <div class="col-6">
+                            <small>Total Spent</small>
+                            <h3>${{ budgetSummary.total_spent|number_format(2) }}</h3>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small>Remaining: ${{ budgetSummary.total_remaining|number_format(2) }}</small>
+                        <div class="progress mt-1" style="height: 10px;">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ budgetSummary.overall_percentage }}%"
+                                 aria-valuenow="{{ budgetSummary.overall_percentage }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        <small class="mt-1">{{ budgetSummary.overall_percentage }}% of budget used</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-secondary text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Budget Status</h5>
+                    <div class="row text-center">
+                        <div class="col-6 mb-2">
+                            <span class="badge bg-success">On Track</span>
+                            <h4>{{ budgetSummary.on_track_count }}</h4>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <span class="badge bg-warning">Warning</span>
+                            <h4>{{ budgetSummary.warning_count }}</h4>
+                        </div>
+                        <div class="col-6">
+                            <span class="badge bg-info">Near Limit</span>
+                            <h4>{{ budgetSummary.near_limit_count }}</h4>
+                        </div>
+                        <div class="col-6">
+                            <span class="badge bg-danger">Overspent</span>
+                            <h4>{{ budgetSummary.overspent_count }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forecast Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Monthly Forecast</h5>
+                    <div class="mt-2">
+                        <small>Current Daily Rate</small>
+                        <h3>${{ forecast.daily_rate|number_format(2) }}/day</h3>
+                    </div>
+                    <div class="mt-3">
+                        <small>Projected End of Month</small>
+                        <h4>${{ forecast.projected_total|number_format(2) }}</h4>
+                    </div>
+                    <small class="mt-1 d-block"><i class="bi bi-calendar"></i> {{ forecast.days_remaining }} days remaining</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Spending Patterns -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">📈 Spending Pattern Detector</h5>
+                </div>
+                <div class="card-body">
+                    {% if spendingPatterns.total_expenses > 0 %}
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <div class="border rounded p-2 text-center">
+                                    <small class="text-muted">Biggest Category</small>
+                                    <h6 class="mb-0">{{ spendingPatterns.biggest_category|default('N/A') }}</h6>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="border rounded p-2 text-center">
+                                    <small class="text-muted">Most Expensive Day</small>
+                                    <h6 class="mb-0">{{ spendingPatterns.most_expensive_day|default('N/A') }}</h6>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="border rounded p-2 text-center">
+                                    <small class="text-muted">Average Expense</small>
+                                    <h6 class="mb-0">${{ spendingPatterns.average_expense|number_format(2) }}</h6>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="border rounded p-2 text-center">
+                                    <small class="text-muted">Highest Expense</small>
+                                    <h6 class="mb-0">${{ spendingPatterns.highest_expense|number_format(2) }}</h6>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if spendingPatterns.top_categories|length > 0 %}
+                            <hr>
+                            <h6>Top Spending Categories</h6>
+                            <ul class="list-group">
+                                {% for category, amount in spendingPatterns.top_categories %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {{ category }}
+                                        <span class="badge bg-primary rounded-pill">${{ amount|number_format(2) }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <canvas id="categoryChart" width="100" height="100"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <canvas id="dailyChart" width="100" height="100"></canvas>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No expense data available yet. Start adding expenses to see patterns!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips & Insights -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">💡 Financial Insights</h5>
+                </div>
+                <div class="card-body">
+                    {% if spendingPatterns.total_expenses > 0 %}
+                        <div class="alert alert-info">
+                            <strong>💭 Did you know?</strong>
+                            <ul class="mb-0 mt-2">
+                                {% if spendingPatterns.biggest_category %}
+                                    <li>Your biggest spending category is "{{ spendingPatterns.biggest_category }}". Consider setting a stricter budget for this category.</li>
+                                {% endif %}
+                                {% if spendingPatterns.most_expensive_day %}
+                                    <li>You tend to spend the most on {{ spendingPatterns.most_expensive_day }}s. Plan your expenses better on this day.</li>
+                                {% endif %}
+                                {% if spendingPatterns.average_expense > 100 %}
+                                    <li>Your average expense is ${{ spendingPatterns.average_expense|number_format(2) }}. Try to reduce smaller unnecessary expenses.</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-warning">
+                        <strong>🎯 Financial Tips:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Try to keep your expenses below 50% of your budget to maintain excellent financial health.</li>
+                            <li>Review your bills regularly and pay them on time to avoid late fees.</li>
+                            <li>Consider creating an emergency fund for unexpected expenses.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Status Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">💰 Budget Status Details</h5>
+                </div>
+                <div class="card-body">
+                    {% if budgets|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Budget Name</th>
+                                        <th>Category</th>
+                                        <th>Budget Amount</th>
+                                        <th>Spent Amount</th>
+                                        <th>Remaining</th>
+                                        <th>Usage</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in budgets %}
+                                        <tr>
+                                            <td>{{ item.budget.name }}</td>
+                                            <td>{{ item.budget.category|default('Uncategorized') }}</td>
+                                            <td>${{ item.budget.amount|number_format(2) }}</td>
+                                            <td>${{ item.budget.spentAmount|number_format(2) }}</td>
+                                            <td>
+                                                {% if item.remaining >= 0 %}
+                                                    <span class="text-success">${{ item.remaining|number_format(2) }}</span>
+                                                {% else %}
+                                                    <span class="text-danger">-${{ item.remaining|abs|number_format(2) }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar bg-{{ item.status_color }}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ item.percentage }}%"
+                                                         aria-valuenow="{{ item.percentage }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100">
+                                                        {{ item.percentage }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{{ item.status_color }}">
+                                                    {{ item.status }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="{{ path('finance_budget_show', {'id': item.budget.id}) }}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    View Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No budgets created yet. 
+                            <a href="{{ path('finance_budget_new') }}">Create your first budget</a>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .progress {
+        background-color: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        transition: width 0.3s ease;
+        line-height: 20px;
+        color: white;
+        font-weight: bold;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .alert {
+        border-left: 4px solid;
+    }
+    .alert-success {
+        border-left-color: #28a745;
+    }
+    .alert-warning {
+        border-left-color: #ffc107;
+    }
+    .alert-danger {
+        border-left-color: #dc3545;
+    }
+    .alert-info {
+        border-left-color: #17a2b8;
+    }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryTotals = {{ spendingPatterns.category_totals|json_encode|raw }};
+    const dailyTotals = {{ spendingPatterns.daily_totals|default('{}')|json_encode|raw }};
+    
+    if (Object.keys(categoryTotals).length > 0) {
+        const ctxCat = document.getElementById('categoryChart').getContext('2d');
+        new Chart(ctxCat, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(categoryTotals),
+                datasets: [{
+                    data: Object.values(categoryTotals),
+                    backgroundColor: [
+                        '#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545',
+                        '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: { display: true, text: 'Spending by Category' }
+                }
+            }
+        });
+    }
+
+    if (Object.keys(dailyTotals).length > 0) {
+        const daysOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const orderedLabels = [];
+        const orderedData = [];
+        
+        daysOrder.forEach(day => {
+            if (dailyTotals[day] !== undefined) {
+                orderedLabels.push(day);
+                orderedData.push(dailyTotals[day]);
+            }
+        });
+
+        const ctxDay = document.getElementById('dailyChart').getContext('2d');
+        new Chart(ctxDay, {
+            type: 'bar',
+            data: {
+                labels: orderedLabels,
+                datasets: [{
+                    label: 'Total Spent',
+                    data: orderedData,
+                    backgroundColor: '#0d6efd'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Spending by Day' }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

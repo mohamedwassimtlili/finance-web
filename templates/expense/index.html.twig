@@ -1,0 +1,368 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Expense Management{% endblock %}
+
+{% block body %}
+
+<style>
+    .exp-page { background: #f4f6f9; min-height: 100vh; padding: 2rem 0; }
+    .page-header { background: #fff; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .stat-card { background: #fff; border-radius: 12px; padding: 1.25rem 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); height: 100%; }
+    .stat-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #8a94a6; margin-bottom: 0.4rem; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1; color: #1a1f36; }
+    .stat-icon { font-size: 1.4rem; opacity: 0.35; }
+    .section-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 1.5rem; overflow: hidden; }
+    .section-header { padding: 1rem 1.5rem; border-bottom: 1px solid #f0f2f5; display: flex; justify-content: space-between; align-items: center; }
+    .section-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #8a94a6; margin: 0; }
+    .exp-table thead th { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #8a94a6; background: #f8f9fc; border-bottom: 1px solid #eef0f4; padding: 0.85rem 1rem; }
+    .exp-table tbody td { padding: 0.9rem 1rem; vertical-align: middle; border-bottom: 1px solid #f4f6f9; color: #1a1f36; font-size: 0.875rem; }
+    .exp-table tbody tr:last-child td { border-bottom: none; }
+    .exp-table tbody tr:hover td { background: #fafbfd; }
+    .cat-pill { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600; background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+    .action-btn { background: none; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.8rem; color: #64748b; transition: all 0.15s; cursor: pointer; text-decoration: none; display: inline-block; }
+    .action-btn:hover { background: #f1f5f9; border-color: #cbd5e1; color: #1a1f36; }
+    .action-btn.danger:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+    .progress-thin { height: 4px; border-radius: 10px; background: #eef0f4; overflow: hidden; margin-top: 4px; }
+    .progress-thin .bar { height: 100%; border-radius: 10px; transition: width 0.4s ease; }
+    .insight-item { padding: 0.6rem 0; border-bottom: 1px solid #f4f6f9; }
+    .insight-item:last-child { border-bottom: none; }
+    .insight-label { font-size: 0.78rem; color: #8a94a6; margin-bottom: 2px; }
+    .insight-value { font-size: 0.95rem; font-weight: 600; color: #1a1f36; }
+    .budget-link { color: #1d4ed8; text-decoration: none; font-size: 0.82rem; font-weight: 500; }
+    .budget-link:hover { text-decoration: underline; }
+    .desc-main { font-weight: 600; color: #1a1f36; font-size: 0.875rem; }
+    .desc-sub { font-size: 0.75rem; color: #8a94a6; margin-top: 2px; }
+    .amount-cell { font-weight: 700; color: #b91c1c; font-size: 0.9rem; }
+    .date-main { font-size: 0.82rem; color: #1a1f36; font-weight: 500; }
+    .date-sub { font-size: 0.72rem; color: #8a94a6; }
+</style>
+
+<div class="exp-page">
+<div class="container">
+
+    {# ── Page Header ──────────────────────────────────────── #}
+    
+    <div class="page-header d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="fw-bold mb-1" style="color:#1a1f36;">💸 Expense Management</h4>
+            <p class="mb-0" style="color:#8a94a6; font-size:0.85rem;">Track and analyze your daily expenses</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ path('finance_budgets') }}" class="action-btn">← Budgets</a>
+            <a href="{{ path('finance_expense_new') }}" class="btn btn-sm btn-dark px-3">+ New Expense</a>
+        </div>
+    </div>
+
+    {# ── Compute totals ───────────────────────────────────── #}
+    {% set totalExpenses = 0 %}
+    {% set expenseCount = 0 %}
+    {% set highestExpense = 0 %}
+    {% set categoryTotals = {} %}
+    {% set monthlyTotals = {} %}
+
+    {% for expense in expenses %}
+        {% set amount = expense.amount|default(0) %}
+        {% set totalExpenses = totalExpenses + amount %}
+        {% set expenseCount = expenseCount + 1 %}
+        {% if amount > highestExpense %}{% set highestExpense = amount %}{% endif %}
+        {% set cat = expense.category ?: 'Uncategorized' %}
+        {% set categoryTotals = categoryTotals|merge({(cat): (categoryTotals[cat]|default(0) + amount)}) %}
+        {% set month = expense.expenseDate|date('M Y') %}
+        {% set monthlyTotals = monthlyTotals|merge({(month): (monthlyTotals[month]|default(0) + amount)}) %}
+    {% endfor %}
+
+    {% set avgExpense = expenseCount > 0 ? totalExpenses / expenseCount : 0 %}
+    {% set topCategories = categoryTotals|sort|reverse|slice(0, 3) %}
+    {% set currentMonth = 'now'|date('M Y') %}
+    {% set currentMonthTotal = monthlyTotals[currentMonth]|default(0) %}
+
+    {# ── Stat Cards ───────────────────────────────────────── #}
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Total Expenses</div>
+                        <div class="stat-value">{{ totalExpenses|number_format(2) }}</div>
+                        <div style="font-size:0.75rem; color:#8a94a6;">TND spent</div>
+                    </div>
+                    <div class="stat-icon">💰</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">This Month</div>
+                        <div class="stat-value" style="color:#1d4ed8;">{{ currentMonthTotal|number_format(2) }}</div>
+                        <div style="font-size:0.75rem; color:#8a94a6;">TND in {{ 'now'|date('F') }}</div>
+                    </div>
+                    <div class="stat-icon">📅</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Average Expense</div>
+                        <div class="stat-value" style="color:#0d7a52;">{{ avgExpense|number_format(2) }}</div>
+                        <div style="font-size:0.75rem; color:#8a94a6;">TND per transaction</div>
+                    </div>
+                    <div class="stat-icon">📊</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Transactions</div>
+                        <div class="stat-value">{{ expenseCount }}</div>
+                        <div style="font-size:0.75rem; color:#8a94a6;">total recorded</div>
+                    </div>
+                    <div class="stat-icon">📋</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Insights + Monthly Trend ─────────────────────────── #}
+    {% if expenseCount > 0 %}
+    <div class="row g-3 mb-4">
+
+        {# Spending Insights #}
+        <div class="col-md-4">
+            <div class="section-card h-100">
+                <div class="section-header">
+                    <span class="section-title">📈 Spending Insights</span>
+                </div>
+                <div class="px-4 py-3">
+                    <div class="insight-item">
+                        <div class="insight-label">Highest Expense</div>
+                        <div class="insight-value" style="color:#b91c1c;">{{ highestExpense|number_format(2) }} TND</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-label">Most Active Category</div>
+                        <div class="insight-value">{{ topCategories|keys|first|default('N/A') }}</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-label">Avg per Month</div>
+                        <div class="insight-value">{{ monthlyTotals|length > 0 ? (totalExpenses / monthlyTotals|length)|number_format(2) : '0.00' }} TND</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Top Categories #}
+        <div class="col-md-4">
+            <div class="section-card h-100">
+                <div class="section-header">
+                    <span class="section-title">🏷️ Top Categories</span>
+                </div>
+                <div class="px-4 py-3">
+                    {% for cat, amt in topCategories %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span style="font-size:0.82rem; font-weight:600; color:#1a1f36;">{{ cat }}</span>
+                                <span style="font-size:0.82rem; color:#8a94a6;">{{ amt|number_format(2) }} TND</span>
+                            </div>
+                            <div class="progress-thin">
+                                <div class="bar" style="width:{{ totalExpenses > 0 ? (amt / totalExpenses * 100)|round : 0 }}%; background:#3b82f6;"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {# Monthly Trend #}
+        <div class="col-md-4">
+            <div class="section-card h-100">
+                <div class="section-header">
+                    <span class="section-title">📆 Monthly Trend</span>
+                </div>
+                <div class="px-4 py-3">
+                    {% set maxMonthly = 0 %}
+                    {% for m in monthlyTotals %}
+                        {% if m > maxMonthly %}{% set maxMonthly = m %}{% endif %}
+                    {% endfor %}
+                    {% for month, amt in monthlyTotals|slice(-6, 6) %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span style="font-size:0.82rem; font-weight:600; color:#1a1f36;">{{ month }}</span>
+                                <span style="font-size:0.82rem; color:#8a94a6;">{{ amt|number_format(2) }} TND</span>
+                            </div>
+                            <div class="progress-thin">
+                                <div class="bar" style="width:{{ maxMonthly > 0 ? (amt / maxMonthly * 100)|round : 0 }}%; background:#10b981;"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+    {% endif %}
+  {# ── Search & Filter Bar ─────────────────────────────── #}
+<div class="px-4 py-3 border-bottom" style="border-color:#f0f2f5 !important; background:#fafbfd;">
+    <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+            <input type="text" id="searchInput" class="form-control form-control-sm"
+                   placeholder="🔍 Search description or budget...">
+        </div>
+        <div class="col-md-3">
+            <select id="categoryFilter" class="form-select form-select-sm">
+                <option value="">All Categories</option>
+                <option value="Food & Dining">🍽️ Food & Dining</option>
+                <option value="Housing & Rent">🏠 Housing & Rent</option>
+                <option value="Transport">🚗 Transport</option>
+                <option value="Healthcare">🏥 Healthcare</option>
+                <option value="Entertainment">🎬 Entertainment</option>
+                <option value="Education">📚 Education</option>
+                <option value="Utilities">💡 Utilities</option>
+                <option value="Other">📦 Other</option>
+                <option value="Uncategorized">Uncategorized</option>
+                <option value="Bill">Bill</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select id="budgetFilter" class="form-select form-select-sm">
+                <option value="">All Budgets</option>
+                {% if budgets is defined %}
+                    {% for budget in budgets %}
+                        <option value="{{ budget.name }}">{{ budget.name }}</option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button onclick="resetFilters()" class="btn btn-sm btn-outline-secondary w-100">Reset</button>
+        </div>
+    </div>
+    <div class="mt-2">
+        <small id="filterCount" style="color:#8a94a6;"></small>
+    </div>
+</div>
+    {# ── Expenses Table ───────────────────────────────────── #}
+    <div class="section-card">
+        <div class="section-header">
+            <span class="section-title">📋 All Expenses</span>
+            <span style="font-size:0.78rem; color:#8a94a6;">{{ expenseCount }} transaction{{ expenseCount != 1 ? 's' : '' }} — recent first</span>
+        </div>
+
+        {% if expenses is empty %}
+            <div class="text-center py-5">
+                <div style="font-size:3rem;">📭</div>
+                <p style="color:#8a94a6; margin:0.5rem 0;">No expenses recorded yet</p>
+                <a href="{{ path('finance_expense_new') }}" class="btn btn-dark btn-sm mt-2">Add your first expense</a>
+            </div>
+        {% else %}
+        <div class="table-responsive">
+            <table class="table exp-table mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Description</th>
+                        <th>Amount</th>
+                        <th>Category</th>
+                        <th>Date</th>
+                        <th>Budget</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expense in expenses %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="desc-main">{{ expense.description ?: 'Untitled Expense' }}</div>
+                        </td>
+                        <td>
+                            <span class="amount-cell">{{ expense.amount|number_format(2) }} TND</span>
+                        </td>
+                        <td>
+                            <span class="cat-pill">{{ expense.category ?: 'Uncategorized' }}</span>
+                        </td>
+                        <td>
+                            <div class="date-main">{{ expense.expenseDate ? expense.expenseDate|date('d M Y') : '-' }}</div>
+                            <div class="date-sub">{{ expense.expenseDate ? expense.expenseDate|date('l') : '' }}</div>
+                        </td>
+                        <td>
+                            <a href="{{ path('finance_budget_show', {'id': expense.budget.id}) }}" class="budget-link">
+                                {{ expense.budget.name }}
+                            </a>
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a href="{{ path('finance_expense_edit', {'id': expense.id}) }}" class="action-btn" title="Edit">✏️</a>
+                                <form action="{{ path('finance_expense_delete', {'id': expense.id}) }}"
+                                      method="post" class="d-inline"
+                                      onsubmit="return confirm('Delete this expense?')">
+                                    <input type="hidden" name="_token"
+                                           value="{{ csrf_token('delete_expense_' ~ expense.id) }}">
+                                    <button class="action-btn danger" title="Delete">🗑</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+  
+</div>
+</div>
+<script>
+function filterExpenses() {
+    const search   = document.getElementById('searchInput').value.toLowerCase().trim();
+    const category = document.getElementById('categoryFilter').value.toLowerCase().trim();
+    const budget   = document.getElementById('budgetFilter').value.toLowerCase().trim();
+    const rows     = document.querySelectorAll('.exp-table tbody tr');
+    let visible    = 0;
+
+    rows.forEach(row => {
+        // get text from each relevant cell
+        const desc    = row.cells[0] ? row.cells[0].innerText.toLowerCase() : '';
+        const cat     = row.cells[2] ? row.cells[2].innerText.toLowerCase() : '';
+        const budName = row.cells[4] ? row.cells[4].innerText.toLowerCase() : '';
+
+        const matchSearch   = search   === '' || desc.includes(search) || budName.includes(search);
+        const matchCategory = category === '' || cat.includes(category);
+        const matchBudget   = budget   === '' || budName.includes(budget);
+
+        if (matchSearch && matchCategory && matchBudget) {
+            row.style.display = '';
+            visible++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // update counter
+    const total   = rows.length;
+    const countEl = document.getElementById('filterCount');
+    if (search !== '' || category !== '' || budget !== '') {
+        countEl.textContent = visible + ' of ' + total + ' expenses shown';
+    } else {
+        countEl.textContent = total + ' expenses';
+    }
+}
+
+function resetFilters() {
+    document.getElementById('searchInput').value   = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('budgetFilter').value   = '';
+    filterExpenses();
+}
+
+// attach listeners
+document.getElementById('searchInput').addEventListener('input', filterExpenses);
+document.getElementById('categoryFilter').addEventListener('change', filterExpenses);
+document.getElementById('budgetFilter').addEventListener('change', filterExpenses);
+
+// run once on load to show count
+document.addEventListener('DOMContentLoaded', filterExpenses);
+</script>
+{% endblock %}

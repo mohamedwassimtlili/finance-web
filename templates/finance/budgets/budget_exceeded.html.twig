@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; margin: 0; padding: 2rem; }
+        .container { max-width: 500px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .header { background: #1a1f36; padding: 2rem; text-align: center; }
+        .header h1 { color: #fff; margin: 0; font-size: 1.3rem; font-weight: 700; }
+        .header p { color: #8a94a6; margin: 0.5rem 0 0; font-size: 0.85rem; }
+        .body { padding: 2rem; }
+        .alert-box { background: #fef2f2; border-left: 4px solid #e74c3c; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+        .alert-box p { margin: 0; font-size: 0.875rem; color: #b91c1c; font-weight: 600; }
+        .stat-row { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #f0f2f5; }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-label { font-size: 0.82rem; color: #8a94a6; }
+        .stat-value { font-size: 0.82rem; font-weight: 700; color: #1a1f36; }
+        .overspent { color: #b91c1c !important; }
+        .footer { background: #f8f9fc; padding: 1.25rem 2rem; text-align: center; }
+        .footer p { margin: 0; font-size: 0.75rem; color: #8a94a6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Finance Alert</h1>
+            <p>Personal Finance & Budgeting App</p>
+        </div>
+        <div class="body">
+            <div class="alert-box">
+                <p>⚠️ Your budget "{{ budgetName }}" has been exceeded!</p>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Budget Name</span>
+                <span class="stat-value">{{ budgetName }}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Allocated Amount</span>
+                <span class="stat-value">{{ amount }} TND</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Total Spent</span>
+                <span class="stat-value overspent">{{ spentAmount }} TND</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Overspent By</span>
+                <span class="stat-value overspent">{{ overspentBy }} TND</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Last Expense</span>
+                <span class="stat-value">{{ lastExpense }} TND — {{ lastCategory }}</span>
+            </div>
+        </div>
+        <div class="footer">
+            <p>This is an automated alert from your Personal Finance App.</p>
+            <p style="margin-top:4px;">Please review your budget and adjust your spending.</p>
+        </div>
+    </div>
+</body>
+</html>

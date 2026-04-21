@@ -21,21 +21,25 @@ class Budget
     private ?int $id = null;
 
     #[ORM\Column(length: 150)]
-    #[Assert\NotBlank]
-    private ?string $name = null;
+#[Assert\NotBlank(message: 'Budget name is required')]
+#[Assert\Length(min: 3, max: 150, minMessage: 'Name must be at least 3 characters')]
+private ?string $name = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 15, scale: 2)]
-    #[Assert\NotBlank]
-    #[Assert\Positive]
-    private ?string $amount = null;
+#[ORM\Column(type: Types::DECIMAL, precision: 15, scale: 2)]
+#[Assert\NotBlank(message: 'Amount is required')]
+#[Assert\Positive(message: 'Amount must be greater than 0')]
+private ?string $amount = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE)]
-    #[Assert\NotNull]
-    private ?\DateTimeInterface $startDate = null;
+#[ORM\Column(type: Types::DATE_MUTABLE)]
+#[Assert\NotNull(message: 'Start date is required')]
+private ?\DateTimeInterface $startDate = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE)]
-    #[Assert\NotNull]
-    private ?\DateTimeInterface $endDate = null;
+#[ORM\Column(type: Types::DATE_MUTABLE)]
+#[Assert\NotNull(message: 'End date is required')]
+#[Assert\GreaterThan(propertyPath: 'startDate', message: 'End date must be after start date')]
+private ?\DateTimeInterface $endDate = null;
+
+    
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'budgets')]
     #[ORM\JoinColumn(nullable: false)]
@@ -50,10 +54,10 @@ class Budget
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $createdAt = null;
 
-    #[ORM\OneToMany(mappedBy: 'budget', targetEntity: Bill::class)]
+    #[ORM\OneToMany(mappedBy: 'budget', targetEntity: Bill::class, cascade: ['remove'], orphanRemoval: true)]
     private Collection $bills;
 
-    #[ORM\OneToMany(mappedBy: 'budget', targetEntity: Expense::class)]
+    #[ORM\OneToMany(mappedBy: 'budget', targetEntity: Expense::class, cascade: ['remove'], orphanRemoval: true)]
     private Collection $expenses;
 
     #[ORM\PrePersist]
@@ -96,4 +100,14 @@ class Budget
 
     public function getBills(): Collection { return $this->bills; }
     public function getExpenses(): Collection { return $this->expenses; }
+    
+    public function getStatus(): string
+{
+    if ((float)$this->amount == 0) return 'No Budget';
+    $percentage = ((float)$this->spentAmount / (float)$this->amount) * 100;
+    if ($percentage <= 50) return 'On Track';
+    if ($percentage <= 75) return 'Warning';
+    if ($percentage <= 90) return 'Near Limit';
+    return 'Overspent';
+}
 }

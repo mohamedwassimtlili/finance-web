@@ -27,7 +27,8 @@ class Expense
     private ?string $category = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
-    #[Assert\NotNull]
+    #[Assert\NotNull(message: 'Expense date is required')]
+    #[Assert\LessThanOrEqual('today', message: 'Expense date cannot be in the future')]
     private ?\DateTimeInterface $expenseDate = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -36,6 +37,12 @@ class Expense
     #[ORM\ManyToOne(targetEntity: Budget::class, inversedBy: 'expenses')]
     #[ORM\JoinColumn(nullable: true)]
     private ?Budget $budget = null;
+    
+
+        // Relationship with Bill
+    #[ORM\OneToOne(inversedBy: 'expense', cascade: ['persist'])]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Bill $bill = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $createdAt = null;
@@ -65,4 +72,14 @@ class Expense
 
     public function getCreatedAt(): ?\DateTimeInterface { return $this->createdAt; }
     public function setCreatedAt(?\DateTimeInterface $createdAt): static { $this->createdAt = $createdAt; return $this; }
+        public function getBill(): ?Bill
+    {
+        return $this->bill;
+    }
+
+    public function setBill(?Bill $bill): static
+    {
+        $this->bill = $bill;
+        return $this;
+    }
 }

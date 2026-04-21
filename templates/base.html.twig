@@ -150,6 +150,12 @@
                                     <p>My Bills</p>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{{ path('side_hustle_index') }}" class="nav-link">
+                               <i class="nav-icon bi bi-cash-stack"></i>
+                               <p>My Earnings</p>
+            </a>
+        </li>
                         </ul>
                     </li>
                     <li class="nav-item has-treeview">
@@ -334,7 +340,75 @@
     </footer>
 
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
 
+    // Override all HTML5 validation messages in English
+    document.querySelectorAll('input, select, textarea').forEach(function (field) {
+
+        field.addEventListener('invalid', function (e) {
+            e.preventDefault();
+
+            const val = field.value.trim();
+            const type = field.type;
+            const min = field.min;
+            const max = field.max;
+            const minLength = field.minLength;
+            const maxLength = field.maxLength;
+
+            // Required / empty
+            if (field.validity.valueMissing) {
+                field.setCustomValidity('This field is required.');
+            }
+            // Wrong type (email, number, date etc.)
+            else if (field.validity.typeMismatch) {
+                if (type === 'email') field.setCustomValidity('Please enter a valid email address.');
+                else if (type === 'url') field.setCustomValidity('Please enter a valid URL.');
+                else field.setCustomValidity('Please enter a valid value.');
+            }
+            // Number too low
+            else if (field.validity.rangeUnderflow) {
+                field.setCustomValidity('Value must be greater than or equal to ' + min + '.');
+            }
+            // Number too high
+            else if (field.validity.rangeOverflow) {
+                field.setCustomValidity('Value must be less than or equal to ' + max + '.');
+            }
+            // Text too short
+            else if (field.validity.tooShort) {
+                field.setCustomValidity('Please enter at least ' + minLength + ' characters (currently ' + val.length + ').');
+            }
+            // Text too long
+            else if (field.validity.tooLong) {
+                field.setCustomValidity('Please enter at most ' + maxLength + ' characters.');
+            }
+            // Step mismatch (decimal precision)
+            else if (field.validity.stepMismatch) {
+                field.setCustomValidity('Please enter a valid number (e.g. 10.00).');
+            }
+            // Pattern mismatch
+            else if (field.validity.patternMismatch) {
+                field.setCustomValidity('Please match the requested format.');
+            }
+            // Fallback
+            else {
+                field.setCustomValidity('Please enter a valid value.');
+            }
+
+            field.reportValidity();
+        });
+
+        // Reset custom message when user starts typing again
+        field.addEventListener('input', function () {
+            field.setCustomValidity('');
+        });
+
+        field.addEventListener('change', function () {
+            field.setCustomValidity('');
+        });
+    });
+});
+</script>
 {# AdminLTE JS (includes Bootstrap 5) #}
 <script src="{{ asset('adminlte/js/adminlte.min.js') }}"></script>
 {% block javascripts %}{% endblock %}

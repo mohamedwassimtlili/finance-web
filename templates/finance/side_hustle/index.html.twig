@@ -1,0 +1,250 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Earnings{% endblock %}
+
+{% block body %}
+<div class="container-fluid px-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h4 class="mb-0 fw-semibold">💰 Find Your Side Hustle</h4>
+                    <p class="text-muted small mb-0">Discover opportunities to earn extra money based on your profile</p>
+                </div>
+                <div class="card-body">
+                    <!-- Two column layout -->
+                    <div class="row">
+                        <!-- Left Column: Form -->
+                        <div class="col-lg-7">
+                            <div class="mb-4">
+                                {% for label, messages in app.flashes %}
+                                    {% for message in messages %}
+                                        <div class="alert alert-{{ label == 'error' ? 'danger' : label }} alert-dismissible fade show" role="alert">
+                                            {{ message }}
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        </div>
+                                    {% endfor %}
+                                {% endfor %}
+                                
+                                <ul class="nav nav-tabs" id="methodTab" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="quick-tab" data-bs-toggle="tab" data-bs-target="#quick" type="button" role="tab">
+                                            Professional Assessment
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai" type="button" role="tab">
+                                            AI Discovery
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content mt-4">
+                                    <!-- Quick Match Tab -->
+                                    <div class="tab-pane fade show active" id="quick" role="tabpanel">
+                                        <form method="post" action="{{ path('side_hustle_generate_rules') }}" class="mt-2">
+                                            <!-- Work Preferences & Personality -->
+                                            <div class="card border-0 bg-light mb-4 rounded-3">
+                                                <div class="card-body p-4">
+                                                    <h6 class="fw-bold mb-3" style="color: #4f46e5;">1. Professional Work Environment Preference</h6>
+                                                    <div class="row g-3">
+                                                        <div class="col-md-6">
+                                                            <label class="form-label fw-medium text-muted small">Work Location</label>
+                                                            <select name="work_preference" class="form-select border-0 shadow-sm" required>
+                                                                <option value="remote">Fully Remote / Distributed</option>
+                                                                <option value="in_person">On-Site / Field Work</option>
+                                                                <option value="hybrid">Hybrid / Flexible</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label fw-medium text-muted small">Interaction Style</label>
+                                                            <select name="personality" class="form-select border-0 shadow-sm" required>
+                                                                <option value="introvert">Independent (Solo contributor)</option>
+                                                                <option value="extrovert">Collaborative (Client/team facing)</option>
+                                                                <option value="ambivert">Adaptive (Mixed environment)</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Goals & Risk -->
+                                            <div class="card border-0 bg-light mb-4 rounded-3">
+                                                <div class="card-body p-4">
+                                                    <h6 class="fw-bold mb-3" style="color: #4f46e5;">2. Strategic Goals & Capital Allocation</h6>
+                                                    <div class="row g-3">
+                                                        <div class="col-md-4">
+                                                            <label class="form-label fw-medium text-muted small">Primary Objective</label>
+                                                            <select name="motivation" class="form-select border-0 shadow-sm" required>
+                                                                <option value="debt">Debt Liquidation</option>
+                                                                <option value="investing">Investment Capital Generation</option>
+                                                                <option value="fun">Discretionary Income</option>
+                                                                <option value="survival">Primary Income Supplement</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label fw-medium text-muted small">Risk Tolerance</label>
+                                                            <select name="risk_tolerance" class="form-select border-0 shadow-sm" required>
+                                                                <option value="low">Low (Guaranteed hourly wage)</option>
+                                                                <option value="medium">Medium (Freelance / Contract)</option>
+                                                                <option value="high">High (Commission / Equity)</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label fw-medium text-muted small">Target Monthly Revenue</label>
+                                                            <select name="goal" class="form-select border-0 shadow-sm" required>
+                                                                <option value="100-300">$100 - $300 / mo</option>
+                                                                <option value="300-500">$300 - $500 / mo</option>
+                                                                <option value="500-1000">$500 - $1,000 / mo</option>
+                                                                <option value="1000+">$1,000+ / mo</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Assets & Skills -->
+                                            <div class="card border-0 bg-light mb-4 rounded-3">
+                                                <div class="card-body p-4">
+                                                    <h6 class="fw-bold mb-3" style="color: #4f46e5;">3. Core Competencies & Capital Assets</h6>
+                                                    
+                                                    <div class="mb-4">
+                                                        <label class="form-label fw-medium text-muted small">Available Capital Assets (Select all that apply)</label>
+                                                        <div class="row g-2">
+                                                            {% for asset, label in {'car':'Commercial/Personal Vehicle', 'truck':'Utility Vehicle', 'camera':'Professional A/V Equipment', 'drone':'Commercial Drone', 'spare_room':'Unused Real Estate', 'gaming_pc':'High-Performance Workstation', 'power_tools':'Specialized Trade Tools'} %}
+                                                            <div class="col-md-6 col-lg-4">
+                                                                <div class="form-check bg-white p-2 rounded shadow-sm border border-light">
+                                                                    <input class="form-check-input ms-1 me-2 skill-check" type="checkbox" name="assets[]" value="{{ asset }}" id="asset_{{ asset }}">
+                                                                    <label class="form-check-label w-100" style="font-size: 0.85rem;" for="asset_{{ asset }}">{{ label }}</label>
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <label class="form-label fw-medium text-muted small">Professional Competencies (Select your primary strengths)</label>
+                                                        <div class="row g-2">
+                                                            {% for skill, label in {'writing':'Technical/Copywriting', 'coding':'Software Development', 'design':'Graphic/UX Design', 'video':'Video Production', 'marketing':'Digital Marketing/SEO', 'teaching':'Instruction/Consulting', 'handyman':'Trade/Manual Skills', 'translation':'Language Translation', 'sales':'B2B/B2C Sales'} %}
+                                                            <div class="col-md-6 col-lg-4">
+                                                                <div class="form-check bg-white p-2 rounded shadow-sm border border-light">
+                                                                    <input class="form-check-input ms-1 me-2 skill-check" type="checkbox" name="skills[]" value="{{ skill }}" id="skill_{{ skill }}">
+                                                                    <label class="form-check-label w-100" style="font-size: 0.85rem;" for="skill_{{ skill }}">{{ label }}</label>
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mt-4 text-center">
+                                                <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm" style="background-color: #4f46e5; border-color: #4f46e5; border-radius: 8px;">
+                                                    Analyze Opportunities
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    
+                                    <!-- AI Generator Tab -->
+                                    <div class="tab-pane fade" id="ai" role="tabpanel">
+                                        <form method="post" action="{{ path('side_hustle_generate') }}">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-medium">Describe yourself</label>
+                                                <textarea name="user_description" rows="6" class="form-control" 
+                                                    placeholder="Example: I'm a nurse who knits. Have a DSLR camera. Want to earn $500/month. Free on weekends."></textarea>
+                                                <div class="form-text">Be specific about your job, skills, hobbies, and goals.</div>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary px-4">
+                                                <i class="bi bi-stars"></i> Generate with AI
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column: Info -->
+                        <div class="col-lg-5">
+                            <div class="bg-light rounded-3 p-4">
+                                <h5 class="fw-semibold mb-3">💡 Popular Side Hustles</h5>
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="fs-4 me-3">✍️</span>
+                                        <div>
+                                            <strong>Freelance Writing</strong>
+                                            <div class="small text-muted">$500-2000/month</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="fs-4 me-3">📸</span>
+                                        <div>
+                                            <strong>Photography</strong>
+                                            <div class="small text-muted">$300-1500/month</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="fs-4 me-3">💻</span>
+                                        <div>
+                                            <strong>Virtual Assistant</strong>
+                                            <div class="small text-muted">$400-2000/month</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <span class="fs-4 me-3">📚</span>
+                                        <div>
+                                            <strong>Online Tutoring</strong>
+                                            <div class="small text-muted">$300-1500/month</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="small text-muted">
+                                    <i class="bi bi-lightbulb"></i> Based on your answers, we'll match you with the best opportunities.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Optional: Visual feedback for checkboxes
+document.querySelectorAll('.skill-check').forEach(cb => {
+    cb.addEventListener('change', function() {
+        this.closest('.form-check').style.backgroundColor = this.checked ? '#e7f1ff' : '';
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Manually handle tab switching in case AdminLTE's bootstrap version doesn't pick up data-bs-target
+    const quickTab = document.getElementById('quick-tab');
+    const aiTab = document.getElementById('ai-tab');
+    const quickPane = document.getElementById('quick');
+    const aiPane = document.getElementById('ai');
+
+    if (quickTab && aiTab) {
+        quickTab.addEventListener('click', function(e) {
+            e.preventDefault();
+            quickTab.classList.add('active');
+            aiTab.classList.remove('active');
+            
+            quickPane.classList.add('show', 'active');
+            aiPane.classList.remove('show', 'active');
+        });
+
+        aiTab.addEventListener('click', function(e) {
+            e.preventDefault();
+            aiTab.classList.add('active');
+            quickTab.classList.remove('active');
+            
+            aiPane.classList.add('show', 'active');
+            quickPane.classList.remove('show', 'active');
+        });
+    }
+});
+</script>
+{% endblock %}

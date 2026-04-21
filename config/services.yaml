@@ -5,6 +5,8 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
 
+    huggingface_api_key: '%env(HUGGINGFACE_API_KEY)%'
+
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -27,3 +29,11 @@ services:
         arguments:
             $paymeeApiKey: '%env(PAYMEE_API_KEY)%'
             $paymeeUrl: '%env(PAYMEE_PAYMENT_URL)%'
+
+    App\Service\HuggingFaceService:
+        arguments:
+            $apiKey: '%huggingface_api_key%'
+    
+    App\Service\RulesBasedService:
+        autowire: true
+        autoconfigure: true
