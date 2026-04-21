@@ -6,6 +6,7 @@ use App\Repository\ComplaintRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use App\Validator\NoProfanity;
 
 #[ORM\Entity(repositoryClass: ComplaintRepository::class)]
 #[ORM\Table(name: 'complaint')]
@@ -19,6 +20,7 @@ class Complaint
 
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank]
+    #[NoProfanity]
     private ?string $subject = null;
 
     #[ORM\Column(length: 20, options: ['default' => 'pending'])]

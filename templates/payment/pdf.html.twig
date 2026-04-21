@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt #{{ transaction.id }}</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: DejaVu Sans, Arial, sans-serif; color:#1a1a2e; background:#fff; font-size:13px; }
+
+        /* ── Header bar ── */
+        .header { background:#1a56db; color:#fff; padding:28px 40px; }
+        .header-inner { display:table; width:100%; }
+        .header-left  { display:table-cell; vertical-align:middle; }
+        .header-right { display:table-cell; vertical-align:middle; text-align:right; }
+        .header h1    { font-size:22px; font-weight:700; margin:0; }
+        .header .sub  { font-size:11px; opacity:.80; margin-top:3px; }
+        .receipt-no   { font-size:13px; font-weight:700; }
+        .receipt-date { font-size:11px; opacity:.80; margin-top:2px; }
+
+        /* ── Status badge ── */
+        .status-bar  { padding:12px 40px; border-bottom:2px solid #e5e7eb; }
+        .badge       { display:inline-block; padding:5px 18px; border-radius:50px; font-size:11px; font-weight:700; letter-spacing:.5px; color:#fff; }
+        .badge-completed { background:#22c55e; }
+        .badge-pending   { background:#f59e0b; }
+        .badge-failed    { background:#ef4444; }
+        .badge-cancelled { background:#6b7280; }
+
+        /* ── Amount hero ── */
+        .amount-hero { text-align:center; padding:32px 40px 24px; border-bottom:1px solid #f1f1f1; }
+        .amount-hero .lbl  { font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+        .amount-hero .amt  { font-size:48px; font-weight:800; color:#1a56db; line-height:1; }
+        .amount-hero .cur  { font-size:14px; color:#6b7280; margin-top:4px; }
+
+        /* ── Detail table ── */
+        .section   { padding:24px 40px; }
+        .section h2 { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#6b7280; margin-bottom:14px; border-bottom:1px solid #e5e7eb; padding-bottom:8px; }
+        table.details { width:100%; border-collapse:collapse; }
+        table.details tr td { padding:10px 0; border-bottom:1px solid #f3f4f6; vertical-align:top; }
+        table.details tr:last-child td { border-bottom:none; }
+        table.details .lbl { color:#6b7280; font-size:12px; width:45%; }
+        table.details .val { color:#111827; font-weight:700; font-size:13px; }
+
+        /* ── Footer ── */
+        .footer { margin:0 40px; padding:18px 0; border-top:1px solid #e5e7eb; text-align:center; font-size:10px; color:#9ca3af; }
+
+        /* ── Watermark for non-completed ── */
+        {% if transaction.status != 'COMPLETED' %}
+        .watermark { position:fixed; top:38%; left:10%; transform:rotate(-35deg); font-size:72px; font-weight:900; color:rgba(239,68,68,.08); text-transform:uppercase; letter-spacing:8px; pointer-events:none; z-index:0; }
+        {% endif %}
+    </style>
+</head>
+<body>
+
+{% if transaction.status != 'COMPLETED' %}
+<div class="watermark">{{ transaction.status }}</div>
+{% endif %}
+
+<!-- Header -->
+<div class="header">
+    <div class="header-inner">
+        <div class="header-left">
+            <h1>💳 MyApp</h1>
+            <div class="sub">Official Payment Receipt</div>
+        </div>
+        <div class="header-right">
+            <div class="receipt-no">Receipt #{{ transaction.id }}</div>
+            <div class="receipt-date">{{ transaction.createdAt ? transaction.createdAt|date('d/m/Y H:i') : '—' }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Status -->
+<div class="status-bar">
+    <span class="badge badge-{{ transaction.status|lower }}">{{ transaction.status }}</span>
+</div>
+
+<!-- Amount -->
+<div class="amount-hero">
+    <div class="lbl">Total Amount Paid</div>
+    <div class="amt">{{ transaction.amount|number_format(2, '.', ',') }}</div>
+    <div class="cur">{{ transaction.currency ?? 'TND' }}</div>
+</div>
+
+<!-- Transaction Details -->
+<div class="section">
+    <h2>Transaction Details</h2>
+    <table class="details">
+        <tr>
+            <td class="lbl">Transaction ID</td>
+            <td class="val">#{{ transaction.id }}</td>
+        </tr>
+        <tr>
+            <td class="lbl">Note / Reference</td>
+            <td class="val">{{ transaction.description|split('[paymee:')[0]|trim|default('—') }}</td>
+        </tr>
+        <tr>
+            <td class="lbl">Status</td>
+            <td class="val">{{ transaction.status }}</td>
+        </tr>
+        <tr>
+            <td class="lbl">Date &amp; Time</td>
+            <td class="val">{{ transaction.createdAt ? transaction.createdAt|date('d/m/Y H:i:s') : '—' }}</td>
+        </tr>
+        <tr>
+            <td class="lbl">Currency</td>
+            <td class="val">{{ transaction.currency ?? 'TND' }}</td>
+        </tr>
+        <tr>
+            <td class="lbl">Payment Gateway</td>
+            <td class="val">Paymee (Sandbox)</td>
+        </tr>
+    </table>
+</div>
+
+<!-- Account Details -->
+<div class="section">
+    <h2>Account Holder</h2>
+    <table class="details">
+        <tr>
+            <td class="lbl">Full Name</td>
+            <td class="val">{{ transaction.user.name }}</td>
+        </tr>
+        <tr>
+            <td class="lbl">Email Address</td>
+            <td class="val">{{ transaction.user.email }}</td>
+        </tr>
+        {% if transaction.user.phone %}
+        <tr>
+            <td class="lbl">Phone</td>
+            <td class="val">{{ transaction.user.phone }}</td>
+        </tr>
+        {% endif %}
+    </table>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    This is an automatically generated receipt from MyApp · Powered by Paymee · {{ "now"|date('Y') }} © All rights reserved
+</div>
+
+</body>
+</html>

@@ -30,11 +30,17 @@
         {% else %}
             <table class="table table-hover mb-0">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Amount (TND)</th><th>Note</th><th>Status</th><th>Date</th></tr>
+                    <tr>
+                        <th>#</th>
+                        <th>Amount (TND)</th>
+                        <th>Note</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
                 </thead>
                 <tbody>
                 {% for t in transactions %}
-                    {% set note = t.description|replace({('[paymee:' ~ t.description|split('[paymee:')[1]|default('')): ''})|trim %}
                     <tr>
                         <td>{{ t.id }}</td>
                         <td class="fw-semibold">{{ t.amount|number_format(2, '.', ',') }}</td>
@@ -47,6 +53,13 @@
                             {% else %}<span class="badge bg-info">{{ t.status }}</span>{% endif %}
                         </td>
                         <td>{{ t.createdAt ? t.createdAt|date('d/m/Y H:i') : '—' }}</td>
+                        <td>
+                            <a href="{{ path('payment_pdf', {id: t.id}) }}"
+                               class="btn btn-sm btn-outline-primary"
+                               title="Download PDF receipt">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>Télécharger PDF
+                            </a>
+                        </td>
                     </tr>
                 {% endfor %}
                 </tbody>
