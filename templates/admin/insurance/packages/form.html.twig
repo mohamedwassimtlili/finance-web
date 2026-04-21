@@ -1,0 +1,74 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ package ? 'Edit Package' : 'New Package' }}{% endblock %}
+{% block page_title %}{{ package ? 'Edit Package — ' ~ package.name : 'New Insurance Package' }}{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-{{ package ? 'warning' : 'primary' }}">
+            <div class="card-header">
+                <h3 class="card-title">Package Details</h3>
+            </div>
+            <form method="post" action="{{ action }}">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control"
+                                   value="{{ package ? package.name : '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Asset Type <span class="text-danger">*</span></label>
+                            <select name="asset_type" class="form-select" required>
+                                <option value="">-- Select --</option>
+                                {% for opt in ['vehicle', 'property', 'equipment', 'other'] %}
+                                    <option value="{{ opt }}"
+                                        {{ package and package.assetType == opt ? 'selected' : '' }}>
+                                        {{ opt|capitalize }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Base Price (TND) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" min="0" name="base_price" class="form-control"
+                                   value="{{ package ? package.basePrice : '' }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Risk Multiplier</label>
+                            <input type="number" step="0.01" min="0.01" name="risk_multiplier" class="form-control"
+                                   value="{{ package ? package.riskMultiplier : '1.00' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Duration (months) <span class="text-danger">*</span></label>
+                            <input type="number" min="1" name="duration_months" class="form-control"
+                                   value="{{ package ? package.durationMonths : '' }}" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Description</label>
+                            <textarea name="description" class="form-control" rows="2">{{ package ? package.description : '' }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Coverage Details</label>
+                            <textarea name="coverage_details" class="form-control" rows="3">{{ package ? package.coverageDetails : '' }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="isActive"
+                                       {{ (not package or package.isActive) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="isActive">Active (visible to users)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <a href="{{ path('admin_insurance_packages') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-{{ package ? 'warning' : 'primary' }}">
+                        <i class="bi bi-save me-1"></i>{{ package ? 'Update' : 'Create' }} Package
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

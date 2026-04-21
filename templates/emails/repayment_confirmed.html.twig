@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 30px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: #1a3c6e; color: white; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .header p { margin: 5px 0 0; opacity: 0.8; font-size: 13px; }
+        .body { padding: 30px; }
+        .success-badge { background: #d4edda; color: #155724; padding: 10px 20px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 20px; }
+        .info-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .info-table td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .info-table td:first-child { font-weight: bold; color: #555; width: 45%; }
+        .info-table tr:nth-child(even) { background: #f9f9f9; }
+        .btn { display: inline-block; background: #1a3c6e; color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 20px; }
+        .footer { background: #f4f4f4; padding: 20px; text-align: center; font-size: 11px; color: #999; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>FinanceWeb</h1>
+        <p>Loan Management Platform</p>
+    </div>
+
+    <div class="body">
+        <p>Hello <strong>{{ user.email }}</strong>,</p>
+
+        <div class="success-badge">✅ Repayment Successfully Confirmed</div>
+
+        <p>Your repayment has been marked as <strong>paid</strong>. Here are the details:</p>
+
+        <table class="info-table">
+            <tr><td>Loan ID</td><td>#{{ loan.id }}</td></tr>
+            <tr><td>Repayment Amount</td><td>{{ repayment.amount|number_format(2, '.', ',') }} TND</td></tr>
+            <tr><td>Payment Date</td><td>{{ repayment.paymentDate|date('d/m/Y') }}</td></tr>
+            <tr><td>Payment Type</td><td>{{ repayment.paymentType ?? 'N/A' }}</td></tr>
+            <tr><td>Status</td><td>✅ PAID</td></tr>
+            <tr><td>Loan Amount</td><td>{{ loan.amount|number_format(2, '.', ',') }} TND</td></tr>
+            <tr><td>Interest Rate</td><td>{{ loan.interestRate }}%</td></tr>
+        </table>
+
+        <p>You can download your full invoice by clicking the button below:</p>
+
+        <a href="http://localhost:8000/loans/{{ loan.id }}/invoice" class="btn">
+            📄 Download Invoice PDF
+        </a>
+
+        <p style="margin-top:24px; color:#777; font-size:13px;">
+            If you did not perform this action, please contact support immediately.
+        </p>
+    </div>
+
+    <div class="footer">
+        This is an automated email from FinanceWeb Loan Management Platform.<br>
+        © {{ "now"|date("Y") }} FinanceWeb. All rights reserved.
+    </div>
+
+</div>
+</body>
+</html>
+
+

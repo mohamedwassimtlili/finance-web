@@ -1,0 +1,168 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}AI Risk Analysis — Loan #{{ loan.id }}{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row g-3 mb-4 text-white">
+        <div class="col-md-3">
+            <div class="card bg-primary border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold mb-0">{{ loan.amount|number_format(0) }}</h3>
+                    <small class="opacity-75">Total Amount (TND)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold mb-0">{{ totalPaid|number_format(0) }}</h3>
+                    <small class="opacity-75">Total Paid</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold mb-0">{{ remaining|number_format(0) }}</h3>
+                    <small class="opacity-75">Remaining</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning border-0 shadow-sm text-dark">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold mb-0">{{ pct }}%</h3>
+                    <small class="opacity-75">Completion</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if error is defined and error is not null %}
+        <div class="alert alert-danger shadow-sm mb-4">
+            <strong>⚠️ Configuration Error:</strong> {{ error }}
+        </div>
+    {% endif %}
+
+    {% if analysis %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3"><i class="fas fa-robot me-2"></i>AI Risk Assessment</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <p class="text-muted mb-1">Risk Level</p>
+                    <span class="badge {% if 'High' in analysis.level %}bg-danger{% else %}bg-info{% endif %} fs-6">{{ analysis.level }}</span>
+                </div>
+                <div class="col-md-8">
+                    <p class="text-muted mb-1">AI Recommendation</p>
+                    <p class="fw-bold text-primary">{{ analysis.advice }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-4">
+                    <h5 class="fw-bold">🚀 Payoff Simulator</h5>
+                </div>
+                <div class="card-body">
+                    <label class="form-label text-muted small fw-bold">MONTHLY BUDGET</label>
+                    <input type="range" class="form-range" id="monthlyRange" min="50" max="{{ loan.amount }}" step="50" value="200">
+                    
+                    <div class="d-flex justify-content-between p-3 bg-light rounded-3 mt-3">
+                        <div>
+                            <small class="text-muted d-block">Installment</small>
+                            <span class="h4 fw-bold" id="monthlyValue">200</span> <small>TND</small>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted d-block">Finish In</small>
+                            <span class="h4 fw-bold text-primary" id="timeResult">--</span> <small>Months</small>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 border rounded-3 bg-light">
+                        <p id="ai-advisor-text" class="small mb-1 text-muted">Calculating...</p>
+                        <span id="riskBadge" class="badge rounded-pill">Status</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-4">
+                    <h5 class="fw-bold">📊 Predicted Trajectory</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 320px;">
+                        <canvas id="repaymentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let repaymentChart;
+const range = document.getElementById('monthlyRange');
+const val = document.getElementById('monthlyValue');
+const advisorText = document.getElementById('ai-advisor-text');
+const timeResult = document.getElementById('timeResult');
+const riskBadge = document.getElementById('riskBadge');
+
+async function simulate(monthly) {
+    try {
+        const res = await fetch('{{ path("loan_simulate") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ remaining: {{ remaining }}, monthly_payment: monthly })
+        });
+        const data = await res.json();
+
+        advisorText.innerText = data.ai_message;
+        timeResult.innerText = data.months_needed;
+        riskBadge.innerText = data.risk + " Risk";
+        riskBadge.className = 'badge rounded-pill bg-' + data.risk_color;
+
+        const labels = data.timeline.map(x => x.month);
+        const chartData = data.timeline.map(x => x.balance);
+
+        if (repaymentChart) {
+            repaymentChart.data.labels = labels;
+            repaymentChart.data.datasets[0].data = chartData;
+            repaymentChart.update();
+        } else {
+            const ctx = document.getElementById('repaymentChart').getContext('2d');
+            repaymentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Balance Remaining',
+                        data: chartData,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    } catch(e) { console.error(e); }
+}
+
+range.addEventListener('input', () => {
+    val.innerText = range.value;
+    simulate(range.value);
+});
+
+window.onload = () => simulate(range.value);
+</script>
+{% endblock %}

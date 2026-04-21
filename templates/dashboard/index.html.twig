@@ -1,0 +1,106 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block body %}
+<div class="row">
+
+    {# Insurance #}
+    <div class="col-lg-3 col-6">
+        <div class="small-box text-bg-primary">
+            <div class="inner">
+                <h3><i class="bi bi-shield-check"></i></h3>
+                <p>Insurance</p>
+            </div>
+            <i class="small-box-icon bi bi-shield-fill"></i>
+            <a href="{{ path('insurance_assets') }}" class="small-box-footer link-light link-underline-opacity-0">
+                Manage Insurance <i class="bi bi-link-45deg"></i>
+            </a>
+        </div>
+    </div>
+
+    {# Loans #}
+    <div class="col-lg-3 col-6">
+        <div class="small-box text-bg-success">
+            <div class="inner">
+                <h3><i class="bi bi-bank"></i></h3>
+                <p>Loans &amp; Repayments</p>
+            </div>
+            <i class="small-box-icon bi bi-bank2"></i>
+            <a href="{{ path('loan_index') }}" class="small-box-footer link-light link-underline-opacity-0">
+                Manage Loans &amp; Repayments <i class="bi bi-link-45deg"></i>
+            </a>
+        </div>
+    </div>
+
+    {# Personal Finance #}
+    <div class="col-lg-3 col-6">
+        <div class="small-box text-bg-warning">
+            <div class="inner">
+                <h3><i class="bi bi-wallet2"></i></h3>
+                <p>Personal Finance</p>
+            </div>
+            <i class="small-box-icon bi bi-piggy-bank-fill"></i>
+            <a href="{{ path('finance_budgets') }}" class="small-box-footer link-light link-underline-opacity-0">
+                Manage Budgets, Expenses &amp; Bills <i class="bi bi-link-45deg"></i>
+            </a>
+        </div>
+    </div>
+
+    {# Payments & Complaints #}
+    <div class="col-lg-3 col-6">
+        <div class="card shadow-sm h-100 border-0 overflow-hidden" style="border-radius:.5rem;">
+            <div class="card-header text-white fw-semibold d-flex align-items-center gap-2"
+                 style="background:linear-gradient(135deg,#0dcaf0 0%,#dc3545 100%);">
+                <i class="bi bi-grid-1x2-fill"></i> Payments &amp; Complaints
+            </div>
+            <div class="list-group list-group-flush flex-fill">
+                <a href="{{ path('payment_index') }}"
+                   class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
+                    <span class="rounded-circle bg-info d-flex align-items-center justify-content-center text-white"
+                          style="width:2.2rem;height:2.2rem;flex-shrink:0;">
+                        <i class="bi bi-credit-card-2-front-fill"></i>
+                    </span>
+                    <div>
+                        <div class="fw-semibold">Payments</div>
+                        <small class="text-muted">View &amp; make payments</small>
+                    </div>
+                    <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                </a>
+                <a href="{{ path('complaint_index') }}"
+                   class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
+                    <span class="rounded-circle bg-danger d-flex align-items-center justify-content-center text-white"
+                          style="width:2.2rem;height:2.2rem;flex-shrink:0;">
+                        <i class="bi bi-megaphone-fill"></i>
+                    </span>
+                    <div>
+                        <div class="fw-semibold">Complaints</div>
+                        <small class="text-muted">Submit &amp; track issues</small>
+                    </div>
+                    <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{# Third row - Recent Activity #}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="bi bi-table me-2"></i>Recent Activity
+                </h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Welcome to your dashboard. Use the sidebar to navigate.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ role ? 'Edit Role' : 'New Role' }}{% endblock %}
+{% block page_title %}{{ role ? 'Edit Role: ' ~ role.roleName : 'New Role' }}{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="bi bi-person-badge me-2"></i>{{ role ? 'Edit Role' : 'Create New Role' }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ role ? path('admin_role_edit', {id: role.id}) : path('admin_role_new') }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Role Name <span class="text-danger">*</span></label>
+                        <input type="text" name="role_name" class="form-control" required
+                               value="{{ role ? role.roleName : '' }}" placeholder="e.g. ROLE_MANAGER">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Permissions</label>
+                        <textarea name="permissions" class="form-control" rows="5"
+                                  placeholder="List permissions, one per line…">{{ role ? role.permissions : '' }}</textarea>
+                        <small class="text-muted">Optional — describe what this role can do.</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i>{{ role ? 'Update Role' : 'Create Role' }}
+                        </button>
+                        <a href="{{ path('admin_role_index') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

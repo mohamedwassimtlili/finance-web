@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Payments{% endblock %}
+{% block page_title %}My Payments{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="text-muted mb-0">All your payments processed via Paymee.</p>
+    <a href="{{ path('payment_create') }}" class="btn btn-primary">
+        <i class="bi bi-credit-card me-1"></i> New Payment
+    </a>
+</div>
+
+{% for msg in app.flashes('success') %}<div class="alert alert-success alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+{% for msg in app.flashes('warning') %}<div class="alert alert-warning alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+{% for msg in app.flashes('error') %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-credit-card me-2"></i>Payment History</h3>
+        <span class="badge bg-secondary ms-2">{{ transactions|length }} total</span>
+    </div>
+    <div class="card-body p-0">
+        {% if transactions is empty %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-credit-card-2-front" style="font-size:3rem;"></i>
+                <p class="mt-2">No payments yet.</p>
+                <a href="{{ path('payment_create') }}" class="btn btn-outline-primary btn-sm">Make a Payment</a>
+            </div>
+        {% else %}
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>#</th><th>Amount (TND)</th><th>Note</th><th>Status</th><th>Date</th></tr>
+                </thead>
+                <tbody>
+                {% for t in transactions %}
+                    {% set note = t.description|replace({('[paymee:' ~ t.description|split('[paymee:')[1]|default('')): ''})|trim %}
+                    <tr>
+                        <td>{{ t.id }}</td>
+                        <td class="fw-semibold">{{ t.amount|number_format(2, '.', ',') }}</td>
+                        <td>{{ t.description|split('[paymee:')[0]|trim|default('—') }}</td>
+                        <td>
+                            {% if t.status == 'COMPLETED' %}<span class="badge bg-success">Completed</span>
+                            {% elseif t.status == 'PENDING' %}<span class="badge bg-warning text-dark">Pending</span>
+                            {% elseif t.status == 'FAILED' %}<span class="badge bg-danger">Failed</span>
+                            {% elseif t.status == 'CANCELLED' %}<span class="badge bg-secondary">Cancelled</span>
+                            {% else %}<span class="badge bg-info">{{ t.status }}</span>{% endif %}
+                        </td>
+                        <td>{{ t.createdAt ? t.createdAt|date('d/m/Y H:i') : '—' }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

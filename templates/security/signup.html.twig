@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sign up!{% endblock %}</title>
+    <link rel="stylesheet" href="{{ asset('adminlte/css/adminlte.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body class="register-page bg-body-secondary">
+    <div class="register-box">
+        <div class="register-logo text-center py-4">
+            <a href="#"><b>Finance</b>App</a>
+        </div>
+        <div class="card card-outline card-primary">
+            <div class="card-body register-card-body">
+                <p class="login-box-msg">Register a new membership</p>
+                
+                <form method="post">
+                    <div class="input-group mb-3">
+                        <div class="form-floating flex-grow-1">
+                            <input type="text" name="name" id="inputName" class="form-control" autocomplete="name" placeholder="Full Name" required autofocus>
+                            <label for="inputName">Full Name</label>
+                        </div>
+                        <div class="input-group-text">
+                            <span class="bi bi-person-fill"></span>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="form-floating flex-grow-1">
+                            <input type="email" name="email" id="inputEmail" class="form-control" autocomplete="email" placeholder="Email" required>
+                            <label for="inputEmail">Email</label>
+                        </div>
+                        <div class="input-group-text">
+                            <span class="bi bi-envelope"></span>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="form-floating flex-grow-1">
+                            <input type="text" name="phone" id="inputPhone" class="form-control" autocomplete="tel" placeholder="Phone">
+                            <label for="inputPhone">Phone (Optional)</label>
+                        </div>
+                        <div class="input-group-text">
+                            <span class="bi bi-telephone-fill"></span>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="form-floating flex-grow-1">
+                            <input type="password" name="password" id="inputPassword" class="form-control" autocomplete="new-password" placeholder="Password" required>
+                            <label for="inputPassword">Password</label>
+                        </div>
+                        <div class="input-group-text">
+                            <span class="bi bi-lock-fill"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="terms" id="termsAgree" required>
+                                <label class="form-check-label" for="termsAgree">I agree to the <a href="#">terms</a></label>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Sign Up</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <p class="mb-0 mt-3 text-center">
+                    <a href="{{ path('app_login') }}" class="text-center">I already have a membership</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ asset('adminlte/js/adminlte.min.js') }}"></script>
+</body>
+</html>

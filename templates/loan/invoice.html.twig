@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 13px; color: #2c2c2c; padding: 30px; }
+        .section-title { font-size: 13px; font-weight: bold; color: #1a3c6e; border-bottom: 1px solid #cde; padding-bottom: 5px; margin: 20px 0 10px; text-transform: uppercase; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        .info-table td { padding: 7px 10px; font-size: 12px; }
+        .info-table td:first-child { font-weight: bold; color: #444; width: 45%; }
+        .info-table tr:nth-child(even) { background: #f4f7fb; }
+        .info-table tr:nth-child(odd) { background: #ffffff; }
+        .summary-box { background: #f0f5ff; border: 1px solid #c0d0ee; padding: 14px 16px; margin-bottom: 20px; }
+        .summary-box .amount { font-size: 22px; font-weight: bold; color: #1a3c6e; }
+        .summary-box .label { font-size: 11px; color: #666; margin-bottom: 4px; }
+        .progress-wrap { background: #dde; height: 12px; width: 100%; margin-top: 8px; }
+        .progress-fill { background: #28a745; height: 12px; }
+        .progress-label { font-size: 11px; color: #555; margin-top: 4px; text-align: right; }
+        .repayment-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .repayment-table th { background: #1a3c6e; color: #fff; padding: 9px 10px; text-align: left; font-size: 12px; }
+        .repayment-table td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid #e5e5e5; }
+        .repayment-table tr:nth-child(even) td { background: #f7f9fc; }
+        .status-paid { color: #155724; font-weight: bold; }
+        .status-pending { color: #856404; font-weight: bold; }
+        .footer { margin-top: 36px; border-top: 1px solid #ddd; padding-top: 12px; text-align: center; font-size: 10px; color: #999; }
+        .badge-active { background: #d4edda; color: #155724; padding: 2px 8px; }
+        .badge-paid { background: #d6d8db; color: #383d41; padding: 2px 8px; }
+        .badge-defaulted { background: #f8d7da; color: #721c24; padding: 2px 8px; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<table width="100%" style="border-bottom: 3px solid #1a3c6e; padding-bottom: 16px; margin-bottom: 24px;">
+    <tr>
+        <td>
+            <div style="font-size:22px; font-weight:bold; color:#1a3c6e;">FinanceWeb</div>
+            <div style="font-size:11px; color:#666;">Loan Management Platform</div>
+        </td>
+        <td style="text-align:right;">
+            <div style="font-size:26px; font-weight:bold; color:#1a3c6e;">INVOICE</div>
+            <div style="font-size:11px; color:#555;">Loan #{{ loan.id }}<br>Generated: {{ "now"|date("d/m/Y") }}</div>
+        </td>
+    </tr>
+</table>
+
+<!-- Loan Details + Payment Summary -->
+<table width="100%" style="margin-bottom:20px;">
+    <tr>
+        <td width="50%" style="vertical-align:top; padding-right:16px;">
+            <div class="section-title">Loan Details</div>
+            <table class="info-table">
+                <tr><td>Loan ID</td><td>#{{ loan.id }}</td></tr>
+                <tr><td>Amount</td><td>{{ loan.amount|number_format(2, '.', ',') }} TND</td></tr>
+                <tr><td>Interest Rate</td><td>{{ loan.interestRate }}%</td></tr>
+                <tr><td>Start Date</td><td>{{ loan.startDate|date('d/m/Y') }}</td></tr>
+                <tr><td>End Date</td><td>{{ loan.endDate|date('d/m/Y') }}</td></tr>
+                <tr>
+                    <td>Status</td>
+                    <td><span class="badge-{{ loan.status }}">{{ loan.status|upper }}</span></td>
+                </tr>
+            </table>
+        </td>
+        <td width="50%" style="vertical-align:top; padding-left:16px;">
+            <div class="section-title">Payment Summary</div>
+            <div class="summary-box">
+                <div class="label">Total Paid</div>
+                <div class="amount">{{ totalPaid|number_format(2, '.', ',') }} TND</div>
+                <table width="100%" style="margin-top:12px;">
+                    <tr>
+                        <td>
+                            <div class="label">Loan Amount</div>
+                            <strong>{{ loan.amount|number_format(2, '.', ',') }} TND</strong>
+                        </td>
+                        <td>
+                            <div class="label">Remaining</div>
+                            <strong>{{ (loan.amount - totalPaid)|round(2)|number_format(2, '.', ',') }} TND</strong>
+                        </td>
+                    </tr>
+                </table>
+                {% set pct = loan.amount > 0 ? (totalPaid / loan.amount * 100)|round : 0 %}
+                <div class="progress-wrap">
+                    <div class="progress-fill" style="width:{{ pct > 100 ? 100 : pct }}%;"></div>
+                </div>
+                <div class="progress-label">{{ pct }}% repaid</div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- Repayment History -->
+<div class="section-title">Repayment History</div>
+<table class="repayment-table">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Amount (TND)</th>
+            <th>Type</th>
+            <th>Monthly Payment</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in repayments %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ r.paymentDate|date('d/m/Y') }}</td>
+            <td>{{ r.amount|number_format(2, '.', ',') }}</td>
+            <td>{{ r.paymentType ?? '—' }}</td>
+            <td>{{ r.monthlyPayment ? r.monthlyPayment|number_format(2, '.', ',') ~ ' TND' : '—' }}</td>
+            <td class="status-{{ r.status }}">{{ r.status|upper }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6" style="text-align:center; color:#999; padding:16px;">No repayments recorded yet.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- QR Code -->
+<table width="100%" style="margin-top:30px;">
+    <tr>
+        <td style="text-align:center;">
+            <div class="section-title" style="text-align:center;">Scan to View Loan Online</div>
+            <img src="data:image/png;base64,{{ qrCode }}" width="120" height="120" />
+            <div style="font-size:10px; color:#999; margin-top:6px;">
+                Scan this QR code to access Loan #{{ loan.id }} online
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- Footer -->
+<div class="footer">
+    Auto-generated invoice — FinanceWeb Loan Management Platform &bull; {{ "now"|date("Y") }}
+</div>
+
+</body>
+</html>

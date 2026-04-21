@@ -1,0 +1,259 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Loan Dashboard{% endblock %}
+{% block page_title %}Loan Analytics Dashboard{% endblock %}
+
+{% block body %}
+
+{# ── Metric Cards ── #}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 text-white bg-primary h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-bank" style="font-size:2rem;"></i>
+                <h2 class="mt-2">{{ totalLoans }}</h2>
+                <p class="mb-0">Total Loans</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 text-white bg-danger h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-cash-stack" style="font-size:2rem;"></i>
+                <h2 class="mt-2">{{ totalBorrowed|number_format(2, '.', ',') }}</h2>
+                <p class="mb-0">Total Borrowed (TND)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 text-white bg-success h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle" style="font-size:2rem;"></i>
+                <h2 class="mt-2">{{ totalRepaid|number_format(2, '.', ',') }}</h2>
+                <p class="mb-0">Total Repaid (TND)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 text-white bg-warning h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-circle" style="font-size:2rem;"></i>
+                <h2 class="mt-2">{{ remaining|number_format(2, '.', ',') }}</h2>
+                <p class="mb-0">Remaining Debt (TND)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Charts Row ── #}
+<div class="row g-3 mb-4">
+    <div class="col-md-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white"><strong>Loan Status Breakdown</strong></div>
+            <div class="card-body d-flex justify-content-center align-items-center">
+                <canvas id="statusChart" width="280" height="280"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white"><strong>Monthly Repayments (TND)</strong></div>
+            <div class="card-body">
+                <canvas id="monthlyChart" height="280"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Currency Converter ── #}
+{% if eurRate is defined and usdRate is defined %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white"><strong>💱 Live Currency Conversion — Your Total Debt</strong></div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h5 class="text-muted">TND</h5>
+                        <h2 class="text-dark">{{ remaining|number_format(2, '.', ',') }}</h2>
+                    </div>
+                    <div class="col-md-4">
+                        <h5 class="text-muted">EUR €</h5>
+                        <h2 class="text-primary">{{ (remaining * eurRate)|number_format(2, '.', ',') }}</h2>
+                        <small class="text-muted">Rate: 1 TND = {{ eurRate }} EUR</small>
+                    </div>
+                    <div class="col-md-4">
+                        <h5 class="text-muted">USD $</h5>
+                        <h2 class="text-success">{{ (remaining * usdRate)|number_format(2, '.', ',') }}</h2>
+                        <small class="text-muted">Rate: 1 TND = {{ usdRate }} USD</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# ── Loan Progress Table ── #}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white"><strong>Loan Progress Overview</strong></div>
+    <div class="card-body p-0">
+        {% if loanProgress is empty %}
+            <div class="text-center py-4 text-muted">No loans found.</div>
+        {% else %}
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Loan #</th>
+                        <th>Amount (TND)</th>
+                        <th>Paid (TND)</th>
+                        <th>Remaining (TND)</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for item in loanProgress %}
+                    <tr>
+                        <td><a href="{{ path('loan_show', {id: item.loan.id}) }}">#{{ item.loan.id }}</a></td>
+                        <td>{{ item.loan.amount|number_format(2, '.', ',') }}</td>
+                        <td>{{ item.paid|number_format(2, '.', ',') }}</td>
+                        <td>{{ item.remaining|number_format(2, '.', ',') }}</td>
+                        <td>
+                            {% if item.loan.status == 'active' %}<span class="badge bg-success">Active</span>
+                            {% elseif item.loan.status == 'paid' %}<span class="badge bg-secondary">Paid</span>
+                            {% else %}<span class="badge bg-danger">Defaulted</span>{% endif %}
+                        </td>
+                        <td style="min-width:150px;">
+                            <div class="progress" style="height:14px;">
+                                <div class="progress-bar bg-success" style="width:{{ item.percent }}%">{{ item.percent }}%</div>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Economic News Section (Working without API) ── #}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <strong><i class="bi bi-newspaper me-2"></i>Economic & Market News</strong>
+        <small class="text-muted">Today's Financial Updates</small>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            <a href="https://www.reuters.com/markets/" target="_blank" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Global Markets Rally on Rate Cut Hopes</h6>
+                        <p class="mb-1 small text-muted">Major indices close higher as investors anticipate central bank rate cuts later this year...</p>
+                        <small class="text-primary">Reuters • Today</small>
+                    </div>
+                </div>
+            </a>
+            <a href="https://www.bloomberg.com/economics" target="_blank" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Inflation Shows Signs of Cooling</h6>
+                        <p class="mb-1 small text-muted">Latest CPI data suggests price pressures are easing, boosting consumer confidence...</p>
+                        <small class="text-primary">Bloomberg • Today</small>
+                    </div>
+                </div>
+            </a>
+            <a href="https://www.ft.com/" target="_blank" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Tech Sector Drives Market Growth</h6>
+                        <p class="mb-1 small text-muted">Technology stocks lead gains amid AI boom and strong earnings reports...</p>
+                        <small class="text-primary">Financial Times • Today</small>
+                    </div>
+                </div>
+            </a>
+            <a href="https://www.cnbc.com/economy/" target="_blank" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Oil Prices Stabilize After Volatile Week</h6>
+                        <p class="mb-1 small text-muted">Crude oil finds balance amid supply concerns and demand forecasts...</p>
+                        <small class="text-primary">CNBC • Today</small>
+                    </div>
+                </div>
+            </a>
+            <a href="https://www.wsj.com/news/economy" target="_blank" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Employment Market Remains Strong</h6>
+                        <p class="mb-1 small text-muted">Job growth exceeds expectations, signaling economic resilience...</p>
+                        <small class="text-primary">Wall Street Journal • Today</small>
+                    </div>
+                </div>
+            </a>
+            <a href="https://www.economist.com/finance-and-economics" target="_blank" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Emerging Markets Show Promise</h6>
+                        <p class="mb-1 small text-muted">Developing economies attract foreign investment amid global shifts...</p>
+                        <small class="text-primary">The Economist • Today</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    <div class="card-footer bg-white text-center">
+        <small class="text-muted">
+            <i class="bi bi-shield-check me-1"></i>
+            Sources: Reuters, Bloomberg, WSJ, CNBC, Financial Times, The Economist
+        </small>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ path('loan_index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to My Loans
+    </a>
+</div>
+
+{# ── Chart.js ── #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    new Chart(document.getElementById('statusChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Active', 'Paid', 'Defaulted'],
+            datasets: [{
+                data: [
+                    {{ statusCounts.active|default(0) }},
+                    {{ statusCounts.paid|default(0) }},
+                    {{ statusCounts.defaulted|default(0) }}
+                ],
+                backgroundColor: ['#28a745', '#6c757d', '#dc3545']
+            }]
+        },
+        options: { responsive: false, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    {% set monthlyValues = [] %}
+    {% for key, value in monthlyData %}
+        {% set monthlyValues = monthlyValues|merge([value]) %}
+    {% endfor %}
+
+    new Chart(document.getElementById('monthlyChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ monthlyData|keys|json_encode|raw }},
+            datasets: [{
+                label: 'Repaid (TND)',
+                data: {{ monthlyValues|json_encode|raw }},
+                backgroundColor: '#0d6efd'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Add Expense{% endblock %}
+{% block page_title %}Add Expense to "{{ budget.name }}"{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header"><h3 class="card-title"><i class="bi bi-receipt me-2"></i>New Expense</h3></div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    Budget: <strong>{{ budget.name }}</strong> — Remaining: 
+                    <strong>{{ (budget.amount - budget.spentAmount)|number_format(2,'.', ',') }} TND</strong>
+                </div>
+                <form method="post" action="{{ path('finance_expense_new', {id: budget.id}) }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Amount (TND)</label>
+                        <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required placeholder="e.g. 45.00">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category</label>
+                        <select name="category" class="form-select">
+                            <option value="">— None —</option>
+                            {% for cat in ['Food','Transport','Health','Housing','Education','Entertainment','Other'] %}
+                                <option>{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Date</label>
+                        <input type="date" name="expense_date" class="form-control" required value="{{ "now"|date('Y-m-d') }}">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Description <small class="text-muted">(optional)</small></label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Brief description…"></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Save Expense</button>
+                        <a href="{{ path('finance_budget_show', {id: budget.id}) }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

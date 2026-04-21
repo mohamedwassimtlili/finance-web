@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+{% block title %}Admin — All Assets{% endblock %}
+{% block page_title %}All Insured Assets{% endblock %}
+
+{% block body %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-hdd-rack me-2"></i>All Registered Assets</h3>
+        <div class="card-tools">
+            <span class="badge text-bg-secondary">{{ assets|length }} total</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-striped table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Owner</th>
+                    <th>Reference</th>
+                    <th>Type</th>
+                    <th>Brand</th>
+                    <th>Declared Value</th>
+                    <th>Approved Value</th>
+                    <th>Location</th>
+                    <th>Manufacture Date</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for asset in assets %}
+                <tr>
+                    <td>{{ asset.id }}</td>
+                    <td>
+                        <strong>{{ asset.user.name }}</strong>
+                        <br><small class="text-muted">{{ asset.user.email }}</small>
+                    </td>
+                    <td>{{ asset.reference }}</td>
+                    <td><span class="badge text-bg-secondary">{{ asset.type }}</span></td>
+                    <td>{{ asset.brand ?? '—' }}</td>
+                    <td>{{ asset.declaredValue }} TND</td>
+                    <td>
+                        {% if asset.approvedValue %}
+                            <span class="text-success fw-bold">{{ asset.approvedValue }} TND</span>
+                        {% else %}
+                            <span class="text-muted fst-italic">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ asset.location ?? '—' }}</td>
+                    <td>{{ asset.manufactureDate|date('Y-m-d') }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="9" class="text-center text-muted py-4">No assets registered.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

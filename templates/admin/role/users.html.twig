@@ -1,0 +1,73 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Assign Roles to Users{% endblock %}
+{% block page_title %}Assign Roles to Users{% endblock %}
+
+{% block body %}
+{% for msg in app.flashes('success') %}<div class="alert alert-success alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+{% for msg in app.flashes('error') %}<div class="alert alert-danger alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="text-muted mb-0">{{ users|length }} user(s) — change their role using the dropdown below.</p>
+    <a href="{{ path('admin_role_index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Back to Roles
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-people me-2"></i>User Role Assignments</h3>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Current Role ID</th>
+                    <th style="min-width:220px;">Assign Role</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>
+                        <i class="bi bi-person-circle me-1 text-muted"></i>
+                        <strong>{{ user.name }}</strong>
+                    </td>
+                    <td><small class="text-muted">{{ user.email }}</small></td>
+                    <td>{{ user.phone|default('—') }}</td>
+                    <td>
+                        {% if user.roleId == 1 %}
+                            <span class="badge bg-danger">Admin ({{ user.roleId }})</span>
+                        {% else %}
+                            <span class="badge bg-secondary">User ({{ user.roleId }})</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="post" action="{{ path('admin_role_assign', {id: user.id}) }}"
+                              class="d-flex gap-2 align-items-center">
+                            <input type="hidden" name="_token" value="{{ csrf_token('assign_role_' ~ user.id) }}">
+                            <select name="role_id" class="form-select form-select-sm">
+                                {% for role in roles %}
+                                    <option value="{{ role.id }}"
+                                        {% if role.id == user.roleId %}selected{% endif %}>
+                                        {{ role.roleName }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary text-nowrap">
+                                <i class="bi bi-check-lg"></i> Assign
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}All Repayments (Admin){% endblock %}
+{% block page_title %}All Repayments{% endblock %}
+
+{% block body %}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-calendar2-check me-2"></i>Repayment Directory</h3>
+        <span class="badge bg-secondary ms-2">{{ repayments|length }} total</span>
+    </div>
+    <div class="card-body p-0">
+        {% if repayments is empty %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-calendar-x" style="font-size:3rem;"></i>
+                <p class="mt-2">No repayments found in the system.</p>
+            </div>
+        {% else %}
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Loan #</th>
+                        <th>Client</th>
+                        <th>Email</th>
+                        <th>Amount (TND)</th>
+                        <th>Payment Date</th>
+                        <th>Type</th>
+                        <th>Monthly Payment</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for r in repayments %}
+                    <tr>
+                        <td>{{ r.id }}</td>
+                        <td>
+                            <a href="{{ path('admin_loan_show', {id: r.loan.id}) }}" class="text-decoration-none">
+                                Loan #{{ r.loan.id }}
+                            </a>
+                        </td>
+                        <td>{{ r.loan.user.name }}</td>
+                        <td><small class="text-muted">{{ r.loan.user.email }}</small></td>
+                        <td>{{ r.amount|number_format(2, '.', ',') }}</td>
+                        <td>{{ r.paymentDate|date('d/m/Y') }}</td>
+                        <td>{{ r.paymentType|default('—') }}</td>
+                        <td>{{ r.monthlyPayment ? r.monthlyPayment|number_format(2, '.', ',') ~ ' TND' : '—' }}</td>
+                        <td>
+                            {% if r.status == 'paid' %}
+                                <span class="badge bg-success">Paid</span>
+                            {% elseif r.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ r.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends 'base.html.twig' %}
+{% block title %}New Contract Request{% endblock %}
+{% block page_title %}New Contract Request{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card card-primary">
+            <div class="card-header"><h3 class="card-title">Select Asset & Package</h3></div>
+            <form method="post" id="requestForm">
+                <div class="card-body">
+
+                    {% if assets is empty %}
+                        <div class="alert alert-warning">
+                            You have no registered assets yet.
+                            <a href="{{ path('insurance_asset_new') }}">Register one first.</a>
+                        </div>
+                    {% else %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Your Asset <span class="text-danger">*</span></label>
+                        <select name="asset_id" class="form-select" required>
+                            <option value="">-- Select an asset --</option>
+                            {% for asset in assets %}
+                                <option value="{{ asset.id }}"
+                                    {% if app.request.query.get('asset') == asset.id %}selected{% endif %}>
+                                    {{ asset.reference }} — {{ asset.type|capitalize }}
+                                    ({{ asset.declaredValue }} TND)
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Insurance Package <span class="text-danger">*</span></label>
+                        <select name="package_id" class="form-select" id="packageSelect" required>
+                            <option value="">-- Select a package --</option>
+                            {% for pkg in packages %}
+                                <option value="{{ pkg.id }}"
+                                    data-base="{{ pkg.basePrice }}"
+                                    data-multiplier="{{ pkg.riskMultiplier }}"
+                                    data-duration="{{ pkg.durationMonths }}"
+                                    {% if app.request.query.get('package') == pkg.id %}selected{% endif %}>
+                                    {{ pkg.name }} — {{ pkg.assetType|capitalize }}
+                                    ({{ pkg.durationMonths }} months)
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="premiumPreview" class="alert alert-info d-none">
+                        <i class="bi bi-calculator me-2"></i>
+                        Estimated Premium: <strong id="premiumValue">—</strong> TND
+                    </div>
+
+                    {% endif %}
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <a href="{{ path('insurance_requests') }}" class="btn btn-secondary">Cancel</a>
+                    {% if assets is not empty %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send me-1"></i>Submit Request
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.getElementById('packageSelect')?.addEventListener('change', function () {
+    const opt = this.options[this.selectedIndex];
+    const base = parseFloat(opt.dataset.base || 0);
+    const mult = parseFloat(opt.dataset.multiplier || 1);
+    const preview = document.getElementById('premiumPreview');
+    const val = document.getElementById('premiumValue');
+
+    if (base && this.value) {
+        val.textContent = (base * mult).toFixed(2);
+        preview.classList.remove('d-none');
+    } else {
+        preview.classList.add('d-none');
+    }
+});
+</script>
+{% endblock %}
