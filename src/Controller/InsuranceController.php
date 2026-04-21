@@ -201,5 +201,85 @@ class InsuranceController extends AbstractController
         return $this->redirectToRoute('insurance_requests');
     }
 
-   
+    // ─── EDIT REQUEST (PENDING only) ──────────────────────────────────────────
+
+    #[Route('/requests/{id}/edit', name: 'request_edit', methods: ['GET', 'POST'])]
+    public function editRequest(
+        ContractRequest $contractRequest,
+        Request $request,
+        InsuredAssetRepository $assetRepo,
+        InsurancePackageRepository $packageRepo,
+        EntityManagerInterface $em
+    ): Response {
+        if ($contractRequest->getUser() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($contractRequest->getStatus() !== 'PENDING') {
+            $this->addFlash('warning', 'Only pending requests can be edited.');
+            return $this->redirectToRoute('insurance_requests');
+        }
+
+        $assets   = $assetRepo->findBy(['user' => $this->getUser()]);
+        $packages = $packageRepo->findBy(['isActive' => true]);
+
+        if ($request->isMethod('POST')) {
+            $asset   = $assetRepo->find($request->request->get('asset_id'));
+            $package = $packageRepo->find($request->request->get('package_id'));
+
+            if (!$asset || $asset->getUser() !== $this->getUser()) {
+                $this->addFlash('danger', 'Invalid asset selected.');
+                return $this->redirectToRoute('insurance_request_edit', ['id' => $contractRequest->getId()]);
+            }
+
+            if (!$package) {
+                $this->addFlash('danger', 'Invalid package selected.');
+                return $this->redirectToRoute('insurance_request_edit', ['id' => $contractRequest->getId()]);
+            }
+
+            // Recalculate premium with the new package
+            $premium = round((float)$package->getBasePrice() * (float)$package->getRiskMultiplier(), 2);
+
+            $contractRequest->setAsset($asset);
+            $contractRequest->setPackage($package);
+            $contractRequest->setCalculatedPremium((string)$premium);
+
+            $em->flush();
+
+            $this->addFlash('success', 'Contract request updated successfully.');
+            return $this->redirectToRoute('insurance_requests');
+        }
+
+        return $this->render('insurance/requests/edit.html.twig', [
+            'contractRequest' => $contractRequest,
+            'assets'          => $assets,
+            'packages'        => $packages,
+        ]);
+    }
+
+    // ─── DELETE REQUEST ───────────────────────────────────────────────────────
+
+    #[Route('/requests/{id}/delete', name: 'request_delete', methods: ['POST'])]
+    public function deleteRequest(
+        ContractRequest $contractRequest,
+        Request $request,
+        EntityManagerInterface $em
+    ): Response {
+        if ($contractRequest->getUser() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!in_array($contractRequest->getStatus(), ['CANCELLED', 'REJECTED'], true)) {
+            $this->addFlash('warning', 'Only cancelled or rejected requests can be deleted.');
+            return $this->redirectToRoute('insurance_requests');
+        }
+
+        if ($this->isCsrfTokenValid('delete-req-' . $contractRequest->getId(), $request->request->get('_token'))) {
+            $em->remove($contractRequest);
+            $em->flush();
+            $this->addFlash('success', 'Request deleted successfully.');
+        }
+
+        return $this->redirectToRoute('insurance_requests');
+    }
 }

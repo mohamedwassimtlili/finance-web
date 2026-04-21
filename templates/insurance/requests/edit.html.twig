@@ -1,0 +1,117 @@
+{% extends 'base.html.twig' %}
+{% block title %}Edit Contract Request #{{ contractRequest.id }}{% endblock %}
+{% block page_title %}Edit Contract Request #{{ contractRequest.id }}{% endblock %}
+
+{% block body %}
+{% for label, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="alert alert-{{ label }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endfor %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        {# ── Current info banner ── #}
+        <div class="alert alert-info d-flex gap-3 align-items-start mb-4">
+            <i class="bi bi-info-circle-fill fs-5 mt-1"></i>
+            <div>
+                <strong>Current Request</strong><br>
+                Asset: <strong>{{ contractRequest.asset.reference }}</strong> ({{ contractRequest.asset.type }})<br>
+                Package: <strong>{{ contractRequest.package.name }}</strong><br>
+                Premium: <strong>{{ contractRequest.calculatedPremium }} TND</strong>
+            </div>
+        </div>
+
+        <div class="card card-warning">
+            <div class="card-header bg-warning-subtle">
+                <h3 class="card-title"><i class="bi bi-pencil-square me-2"></i>Update Asset &amp; Package</h3>
+                <span class="badge text-bg-warning ms-2">PENDING</span>
+            </div>
+
+            <form method="post" id="editRequestForm">
+                <div class="card-body">
+
+                    {# ── Asset select ── #}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Your Asset <span class="text-danger">*</span></label>
+                        <select name="asset_id" class="form-select" required>
+                            <option value="">-- Select an asset --</option>
+                            {% for asset in assets %}
+                                <option value="{{ asset.id }}"
+                                    {{ contractRequest.asset.id == asset.id ? 'selected' : '' }}>
+                                    {{ asset.reference }} — {{ asset.type|capitalize }}
+                                    ({{ asset.declaredValue }} TND)
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {# ── Package select ── #}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Insurance Package <span class="text-danger">*</span></label>
+                        <select name="package_id" class="form-select" id="packageSelect" required>
+                            <option value="">-- Select a package --</option>
+                            {% for pkg in packages %}
+                                <option value="{{ pkg.id }}"
+                                    data-base="{{ pkg.basePrice }}"
+                                    data-multiplier="{{ pkg.riskMultiplier }}"
+                                    data-duration="{{ pkg.durationMonths }}"
+                                    {{ contractRequest.package.id == pkg.id ? 'selected' : '' }}>
+                                    {{ pkg.name }} — {{ pkg.assetType|capitalize }}
+                                    ({{ pkg.durationMonths }} months)
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {# ── Live premium preview ── #}
+                    <div id="premiumPreview" class="alert alert-success">
+                        <i class="bi bi-calculator me-2"></i>
+                        New Estimated Premium: <strong id="premiumValue">{{ contractRequest.calculatedPremium }}</strong> TND
+                    </div>
+
+                </div>
+
+                <div class="card-footer d-flex justify-content-between">
+                    <a href="{{ path('insurance_requests') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Back
+                    </a>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-check-circle me-1"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+(function () {
+    const sel     = document.getElementById('packageSelect');
+    const preview = document.getElementById('premiumPreview');
+    const val     = document.getElementById('premiumValue');
+
+    function updatePreview() {
+        const opt  = sel.options[sel.selectedIndex];
+        const base = parseFloat(opt?.dataset.base || 0);
+        const mult = parseFloat(opt?.dataset.multiplier || 1);
+        if (base && sel.value) {
+            val.textContent = (base * mult).toFixed(2);
+            preview.classList.remove('d-none');
+        } else {
+            preview.classList.add('d-none');
+        }
+    }
+
+    sel?.addEventListener('change', updatePreview);
+    updatePreview(); // run on load to show current value
+})();
+</script>
+{% endblock %}
