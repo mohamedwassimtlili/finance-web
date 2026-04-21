@@ -20,13 +20,15 @@ class PaymentController extends AbstractController
 {
     private string $apiKey;
     private string $paymentUrl;
+    private string $mailerSender;
     private MailerInterface $mailer;
 
-    public function __construct(string $paymeeApiKey, string $paymeeUrl, MailerInterface $mailer)
+    public function __construct(string $paymeeApiKey, string $paymeeUrl, string $mailerSender, MailerInterface $mailer)
     {
-        $this->apiKey     = $paymeeApiKey;
-        $this->paymentUrl = $paymeeUrl;
-        $this->mailer     = $mailer;
+        $this->apiKey       = $paymeeApiKey;
+        $this->paymentUrl   = $paymeeUrl;
+        $this->mailerSender = $mailerSender;
+        $this->mailer       = $mailer;
     }
 
     // ── Send confirmation email ───────────────────────────────────────────────
@@ -39,7 +41,7 @@ class PaymentController extends AbstractController
             ]);
 
             $email = (new Email())
-                ->from('mejriftouuh@gmail.com')
+                ->from($this->mailerSender)
                 ->to($transaction->getUser()->getEmail())
                 ->subject(sprintf(
                     '[MyApp] Payment %s — Receipt #%d',
@@ -79,7 +81,7 @@ class PaymentController extends AbstractController
 
         try {
             $email = (new Email())
-                ->from('mejriftouuh@gmail.com')
+                ->from($this->mailerSender)
                 ->to($userEmail)
                 ->subject('[MyApp] Test Email - SMTP Check')
                 ->html('<h2>✅ SMTP is working!</h2><p>This is a test email sent to: <strong>' . htmlspecialchars((string)$userEmail) . '</strong></p>');
@@ -167,6 +169,9 @@ class PaymentController extends AbstractController
 
                     $em->persist($transaction);
                     $em->flush();
+
+                    // Send email notification about the initiated payment
+                    $this->sendConfirmationEmail($transaction);
 
                     // Remember the transaction in session so we can update it on return
                     $request->getSession()->set('paymee_token', $token);

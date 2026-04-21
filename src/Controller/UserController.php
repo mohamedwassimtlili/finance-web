@@ -15,10 +15,13 @@ use Symfony\Component\Routing\Attribute\Route;
 final class UserController extends AbstractController
 {
     #[Route(name: 'app_user_index', methods: ['GET'])]
-    public function index(UserRepository $userRepository): Response
+    public function index(Request $request, UserRepository $userRepository): Response
     {
+        $q     = $request->query->get('q');
+        $users = $q ? $userRepository->searchByNameOrEmail($q) : $userRepository->findAll();
+
         return $this->render('user/index.html.twig', [
-            'users' => $userRepository->findAll(),
+            'users' => $users,
         ]);
     }
 
@@ -74,6 +77,19 @@ final class UserController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$user->getId(), $request->getPayload()->getString('_token'))) {
             $entityManager->remove($user);
             $entityManager->flush();
+        }
+
+        return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
+    }
+    #[Route('/{id}/toggle-active', name: 'app_user_toggle_active', methods: ['POST'])]
+    public function toggleActive(Request $request, User $user, EntityManagerInterface $entityManager): Response
+    {
+        if ($this->isCsrfTokenValid('toggle-active' . $user->getId(), $request->request->get('_token'))) {
+            $user->setIsActive(!$user->isActive());
+            $entityManager->flush();
+
+            $status = $user->isActive() ? 'activated' : 'deactivated';
+            $this->addFlash('success', 'User ' . $user->getName() . ' has been ' . $status . '.');
         }
 
         return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
